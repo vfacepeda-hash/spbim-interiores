@@ -99,7 +99,9 @@
 
   <script>
     const NOMES = { novo: 'Novo', contatado: 'Contatado', qualificado: 'Qualificado', proposta: 'Proposta', ganho: 'Ganho ✅', perdido: 'Perdido' };
-    let token = sessionStorage.getItem('adminToken') || '';
+    let token = '';
+    try { token = sessionStorage.getItem('adminToken') || ''; } catch {}
+    const hdrToken = () => encodeURIComponent(token); // aceita senha com acentos
     let stages = [], leads = [], atual = null, opc = { segmentos: {}, maturidadeBim: {} };
 
     const $ = (id) => document.getElementById(id);
@@ -108,7 +110,7 @@
     const nivel = (s) => (s >= 70 ? 'hot' : s >= 40 ? 'warm' : 'cold');
 
     async function api(url, opts = {}) {
-      const r = await fetch(url, { ...opts, headers: { 'Content-Type': 'application/json', 'x-admin-token': token, ...(opts.headers || {}) } });
+      const r = await fetch(url, { ...opts, headers: { 'Content-Type': 'application/json', 'x-admin-token': hdrToken(), ...(opts.headers || {}) } });
       if (r.status === 401) { sair(); throw new Error('Sessão expirada'); }
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || 'Erro');
@@ -118,12 +120,19 @@
     // ---------- Login ----------
     $('loginForm').onsubmit = async (e) => {
       e.preventDefault();
-      token = $('senha').value;
-      const r = await fetch('/api/login', { method: 'POST', headers: { 'x-admin-token': token } });
-      if (r.ok) { sessionStorage.setItem('adminToken', token); iniciar(); }
-      else { $('loginMsg').textContent = 'Senha incorreta.'; $('loginMsg').className = 'msg err'; }
+      token = $('senha').value.trim();
+      const msg = $('loginMsg');
+      try {
+        const r = await fetch('/api/login', { method: 'POST', headers: { 'x-admin-token': hdrToken() } });
+        if (r.ok) { try { sessionStorage.setItem('adminToken', token); } catch {} return iniciar(); }
+        const j = await r.json().catch(() => ({}));
+        msg.textContent = j.error || `Erro ${r.status} ao entrar.`;
+      } catch (err) {
+        msg.textContent = 'Não foi possível conectar ao servidor: ' + err.message;
+      }
+      msg.className = 'msg err';
     };
-    function sair() { sessionStorage.removeItem('adminToken'); token = ''; $('app').hidden = true; $('login').hidden = false; }
+    function sair() { try { sessionStorage.removeItem('adminToken'); } catch {} token = ''; $('app').hidden = true; $('login').hidden = false; }
     $('sairBtn').onclick = sair;
 
     async function iniciar() {
@@ -248,7 +257,7 @@
 
     // ---------- Exportar CSV ----------
     $('csvBtn').onclick = async () => {
-      const r = await fetch('/api/leads.csv', { headers: { 'x-admin-token': token } });
+      const r = await fetch('/api/leads.csv', { headers: { 'x-admin-token': hdrToken() } });
       const url = URL.createObjectURL(await r.blob());
       Object.assign(document.createElement('a'), { href: url, download: 'leads-spbim.csv' }).click();
       URL.revokeObjectURL(url);

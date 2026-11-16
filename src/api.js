@@ -41,9 +41,15 @@ async function sha256(text) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return new Uint8Array(buf);
 }
+// A senha chega codificada (encodeURIComponent) para aceitar acentos e "ç".
+function tokenFrom(request) {
+  const raw = request.headers.get('x-admin-token') || '';
+  try { return decodeURIComponent(raw); } catch { return raw; }
+}
 async function isAdmin(request, env) {
-  if (!env.ADMIN_PASSWORD) return false;
-  const [a, b] = await Promise.all([sha256(request.headers.get('x-admin-token') || ''), sha256(env.ADMIN_PASSWORD)]);
+  const esperado = (env.ADMIN_PASSWORD || '').trim();
+  if (!esperado) return false;
+  const [a, b] = await Promise.all([sha256(tokenFrom(request).trim()), sha256(esperado)]);
   let diff = 0;
   for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]; // comparação em tempo constante
   return diff === 0;
@@ -216,7 +222,10 @@ export async function handleApi(request, env) {
     if (path === '/api/leads' && m === 'POST') return capturarLead(request, env);
 
     // Daqui para baixo, somente administrador
-    if (!(await isAdmin(request, env))) return json({ error: 'Não autorizado' }, 401);
+    if (!(env.ADMIN_PASSWORD || '').trim()) {
+      return json({ error: 'A senha do painel (ADMIN_PASSWORD) não está configurada na Cloudflare.', codigo: 'SEM_SENHA' }, 503);
+    }
+    if (!(await isAdmin(request, env))) return json({ error: 'Senha incorreta.', codigo: 'SENHA_INCORRETA' }, 401);
 
     if (path === '/api/login' && m === 'POST') return json({ ok: true });
     if (path === '/api/leads' && m === 'GET') return json({ stages: STAGES, leads: await allLeads(env.DB) });

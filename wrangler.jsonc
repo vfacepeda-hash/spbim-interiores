@@ -5,6 +5,8 @@
   "main": "src/worker.js",
   "compatibility_date": "2025-09-01",
   "workers_dev": true,
+  // Mantém variáveis criadas no painel da Cloudflare ao publicar (não apaga ADMIN_PASSWORD)
+  "keep_vars": true,
   "assets": {
     "directory": "./public",
     "binding": "ASSETS"
