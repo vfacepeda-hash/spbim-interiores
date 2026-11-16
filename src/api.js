@@ -30,6 +30,7 @@ const NOMES_ETAPA = { novo: 'Novo', contatado: 'Contatado', qualificado: 'Qualif
 // Manter em sincronia com as opções fixas em public/index.html
 const SEGMENTOS = {
   arquitetura: 'Escritório de arquitetura',
+  interiores: 'Escritório de design de interiores',
   engenharia: 'Escritório de engenharia / projetos complementares',
   construtora: 'Construtora',
   incorporadora: 'Incorporadora',
@@ -203,7 +204,7 @@ function scoreLead(l) {
   if (l.telefone) score += 5;
   if (l.empresa) score += 5;
   if (l.cargo && /(diretor|gerente|ceo|s[óo]cio|propriet|head|coordenador|bim manager)/i.test(l.cargo)) score += 20;
-  const seg = { construtora: 15, incorporadora: 15, infraestrutura: 15, gerenciadora: 10, engenharia: 10, arquitetura: 10 };
+  const seg = { construtora: 15, incorporadora: 15, infraestrutura: 15, gerenciadora: 10, engenharia: 10, arquitetura: 10, interiores: 10 };
   score += seg[l.segmento] || 0;
   const mat = { iniciando: 15, parcial: 15, consolidado: 10, 'nao-usa': 5 };
   score += mat[l.maturidadeBim] || 0;
