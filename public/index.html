@@ -5,6 +5,93 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>SPBIM — Soluções BIM para Arquitetura, Engenharia e Construção</title>
   <meta name="description" content="Modelagem, compatibilização, implantação e treinamento BIM para escritórios de arquitetura, engenharia, construtoras e incorporadoras." />
+  <link rel="canonical" href="https://spbim-prospeccao.vfacepeda.workers.dev/" />
+  <meta name="theme-color" content="#1f5eff" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <!-- Compartilhamento em WhatsApp, LinkedIn e redes sociais -->
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="pt_BR" />
+  <meta property="og:site_name" content="SPBIM" />
+  <meta property="og:title" content="SPBIM — Soluções BIM para Arquitetura, Engenharia e Construção" />
+  <meta property="og:description" content="Diagnóstico BIM gratuito para escritórios de arquitetura, engenharia, construtoras e incorporadoras." />
+  <meta property="og:url" content="https://spbim-prospeccao.vfacepeda.workers.dev/" />
+  <meta name="twitter:card" content="summary" />
+  <!-- Dados estruturados para o Google -->
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ProfessionalService",
+  "name": "SPBIM - Arquitetura, Engenharia e Construção Digital",
+  "url": "https://spbim-prospeccao.vfacepeda.workers.dev/",
+  "description": "Modelagem, compatibilização, implantação e treinamento BIM para escritórios de arquitetura, engenharia, construtoras e incorporadoras.",
+  "telephone": "+55-11-96598-2361",
+  "taxID": "27.580.118/0001-92",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Rua Gen. Jardim, 770 - Vila Buarque",
+    "addressLocality": "São Paulo",
+    "addressRegion": "SP",
+    "postalCode": "01223-010",
+    "addressCountry": "BR"
+  },
+  "areaServed": "BR",
+  "knowsAbout": [
+    "BIM",
+    "Building Information Modeling",
+    "Compatibilização de projetos",
+    "Clash detection",
+    "Planejamento 4D",
+    "Orçamento 5D",
+    "Scan to BIM",
+    "Revit",
+    "Navisworks"
+  ],
+  "makesOffer": [
+    {
+      "@type": "Offer",
+      "itemOffered": {
+        "@type": "Service",
+        "name": "Modelagem BIM"
+      }
+    },
+    {
+      "@type": "Offer",
+      "itemOffered": {
+        "@type": "Service",
+        "name": "Compatibilização de projetos BIM"
+      }
+    },
+    {
+      "@type": "Offer",
+      "itemOffered": {
+        "@type": "Service",
+        "name": "Implantação BIM"
+      }
+    },
+    {
+      "@type": "Offer",
+      "itemOffered": {
+        "@type": "Service",
+        "name": "Treinamento BIM"
+      }
+    },
+    {
+      "@type": "Offer",
+      "itemOffered": {
+        "@type": "Service",
+        "name": "Planejamento 4D e orçamento 5D"
+      }
+    },
+    {
+      "@type": "Offer",
+      "itemOffered": {
+        "@type": "Service",
+        "name": "As-built e Scan to BIM"
+      }
+    }
+  ]
+}
+  </script>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -64,17 +151,38 @@
           </div>
 
           <label for="segmento">Segmento da empresa*</label>
+          <!-- Manter em sincronia com SEGMENTOS em src/api.js -->
           <select id="segmento" name="segmento" required>
             <option value="">Selecione</option>
+            <option value="arquitetura">Escritório de arquitetura</option>
+            <option value="engenharia">Escritório de engenharia / projetos complementares</option>
+            <option value="construtora">Construtora</option>
+            <option value="incorporadora">Incorporadora</option>
+            <option value="gerenciadora">Gerenciadora / fiscalização de obras</option>
+            <option value="infraestrutura">Infraestrutura / obras públicas</option>
           </select>
 
           <label for="maturidadeBim">Como está o uso de BIM na empresa?*</label>
+          <!-- Manter em sincronia com MATURIDADE_BIM em src/api.js -->
           <select id="maturidadeBim" name="maturidadeBim" required>
             <option value="">Selecione</option>
+            <option value="nao-usa">Ainda não usa BIM (quer começar)</option>
+            <option value="iniciando">Em implantação</option>
+            <option value="parcial">Usa BIM em parte dos projetos</option>
+            <option value="consolidado">BIM consolidado na empresa</option>
           </select>
 
           <label>Softwares que a equipe utiliza</label>
-          <div class="chips" id="softwares"></div>
+          <div class="chips" id="softwares">
+            <label><input type="checkbox" name="softwares" value="Revit"> Revit</label>
+            <label><input type="checkbox" name="softwares" value="ArchiCAD"> ArchiCAD</label>
+            <label><input type="checkbox" name="softwares" value="Navisworks"> Navisworks</label>
+            <label><input type="checkbox" name="softwares" value="Tekla"> Tekla</label>
+            <label><input type="checkbox" name="softwares" value="Civil 3D"> Civil 3D</label>
+            <label><input type="checkbox" name="softwares" value="AutoCAD"> AutoCAD</label>
+            <label><input type="checkbox" name="softwares" value="SketchUp"> SketchUp</label>
+            <label><input type="checkbox" name="softwares" value="Outro"> Outro</label>
+          </div>
 
           <div class="row">
             <div>
@@ -202,19 +310,18 @@
   <script>
     document.getElementById('ano').textContent = new Date().getFullYear();
 
-    // Carrega segmentos AEC, níveis de maturidade BIM e softwares definidos no servidor
-    fetch('/api/opcoes').then((r) => r.json()).then((o) => {
-      const add = (sel, obj) => Object.entries(obj).forEach(([v, t]) => sel.add(new Option(t, v)));
-      add(document.getElementById('segmento'), o.segmentos);
-      add(document.getElementById('maturidadeBim'), o.maturidadeBim);
-      document.getElementById('softwares').innerHTML = o.softwares
-        .map((s) => `<label><input type="checkbox" name="softwares" value="${s}"> ${s}</label>`).join('');
-    });
 
     // Registra a origem do visitante (UTM / referência)
     const params = new URLSearchParams(location.search);
-    const origem = [params.get('utm_source'), params.get('utm_medium'), params.get('utm_campaign')]
-      .filter(Boolean).join(' / ') || (document.referrer ? new URL(document.referrer).hostname : 'direto');
+    let origem = [params.get('utm_source'), params.get('utm_medium'), params.get('utm_campaign')].filter(Boolean).join(' / ');
+    try {
+      if (origem) sessionStorage.setItem('origem', origem);
+      else origem = sessionStorage.getItem('origem') || '';
+    } catch {}
+    if (!origem) {
+      const ref = document.referrer ? new URL(document.referrer).hostname : '';
+      origem = ref && ref !== location.hostname ? ref : 'direto';
+    }
 
     const form = document.getElementById('leadForm');
     const msg = document.getElementById('formMsg');
@@ -241,13 +348,13 @@
         const r = await fetch('/api/leads', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
         });
-        const j = await r.json();
-        if (!r.ok) throw new Error(j.error || 'Erro ao enviar');
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j.error || 'Não foi possível enviar agora. Tente novamente ou fale pelo WhatsApp.');
         form.reset();
         msg.textContent = 'Recebemos seus dados! Um especialista BIM da SPBIM entrará em contato em breve.';
         msg.className = 'msg ok';
       } catch (err) {
-        erro(err.message);
+        erro(err.message === 'Failed to fetch' ? 'Sem conexão. Verifique sua internet e tente novamente.' : err.message);
       } finally {
         btn.disabled = false; btn.textContent = 'Quero meu diagnóstico BIM';
       }

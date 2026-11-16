@@ -68,6 +68,7 @@ async function ensureSchema(db) {
     )`),
     db.prepare('CREATE INDEX IF NOT EXISTS idx_leads_email ON leads(email)'),
     db.prepare(`CREATE TABLE IF NOT EXISTS envios (ip TEXT NOT NULL, em INTEGER NOT NULL)`),
+    db.prepare(`CREATE TABLE IF NOT EXISTS login_falhas (ip TEXT NOT NULL, em INTEGER NOT NULL)`),
   ]);
   schemaReady = true;
 }
@@ -92,6 +93,23 @@ async function rateLimited(db, ip) {
   if (n >= 5) return true;
   await db.prepare('INSERT INTO envios (ip, em) VALUES (?, ?)').bind(ip, t).run();
   return false;
+}
+
+// Bloqueio contra tentativa de adivinhar a senha: 10 erros em 15 minutos por IP
+const LOGIN_MAX_FALHAS = 10;
+const LOGIN_JANELA_MS = 15 * 60_000;
+async function loginBloqueado(db, ip) {
+  const t = Date.now();
+  await db.prepare('DELETE FROM login_falhas WHERE em < ?').bind(t - LOGIN_JANELA_MS).run();
+  const { n } = await db.prepare('SELECT COUNT(*) AS n FROM login_falhas WHERE ip = ?').bind(ip).first();
+  return n >= LOGIN_MAX_FALHAS;
+}
+const registrarFalhaLogin = (db, ip) => db.prepare('INSERT INTO login_falhas (ip, em) VALUES (?, ?)').bind(ip, Date.now()).run();
+const limparFalhasLogin = (db, ip) => db.prepare('DELETE FROM login_falhas WHERE ip = ?').bind(ip).run();
+
+async function getLeadByEmail(db, email) {
+  const row = await db.prepare('SELECT data FROM leads WHERE email = ?').bind(email).first();
+  return row ? JSON.parse(row.data) : null;
 }
 
 // ---------- Regras de negócio ----------
@@ -155,8 +173,28 @@ async function capturarLead(request, env) {
   if (!lead.maturidadeBim) return json({ error: 'Informe o nível de uso de BIM na sua empresa.' }, 400);
 
   lead.score = scoreLead(lead);
-  const dup = await env.DB.prepare('SELECT 1 FROM leads WHERE email = ?').bind(lead.email).first();
-  if (dup) return json({ ok: true, duplicado: true });
+
+  // Mesmo e-mail já cadastrado: registra o novo contato no lead existente (não perde a mensagem)
+  const existente = await getLeadByEmail(env.DB, lead.email);
+  if (existente) {
+    for (const f of ['telefone', 'empresa', 'cargo', 'cidade', 'segmento', 'maturidadeBim', 'porte', 'interesse', 'prazo']) {
+      if (lead[f] && !existente[f]) existente[f] = lead[f];
+    }
+    if (lead.softwares.length) existente.softwares = [...new Set([...(existente.softwares || []), ...lead.softwares])];
+    let texto = 'Novo envio pelo formulário do site';
+    if (lead.interesse) texto += ` · interesse: ${lead.interesse}`;
+    if (lead.mensagem) texto += ` · mensagem: “${lead.mensagem}”`;
+    existente.notas.push({ texto, data: now(), sistema: true });
+    if (existente.etapa === 'perdido') {
+      existente.notas.push({ texto: 'Etapa: perdido → novo (cliente voltou a entrar em contato)', data: now(), sistema: true });
+      existente.etapa = 'novo';
+    }
+    existente.score = scoreLead(existente);
+    existente.atualizadoEm = now();
+    await saveLead(env.DB, existente);
+    return json({ ok: true });
+  }
+
   await insertLead(env.DB, lead);
   return json({ ok: true }, 201);
 }
@@ -199,7 +237,12 @@ async function atualizarLead(request, env, id) {
 
 async function exportarCsv(env) {
   const cols = ['nome', 'email', 'telefone', 'empresa', 'cargo', 'cidade', 'segmento', 'maturidadeBim', 'softwares', 'porte', 'interesse', 'prazo', 'etapa', 'valor', 'score', 'origem', 'criadoEm'];
-  const esc = (v) => `"${String(Array.isArray(v) ? v.join(', ') : v ?? '').replace(/"/g, '""')}"`;
+  // Prefixa ' em textos que começam com = + - @ para o Excel não executá-los como fórmula
+  const esc = (v) => {
+    let t = String(Array.isArray(v) ? v.join(', ') : v ?? '');
+    if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+    return `"${t.replace(/"/g, '""')}"`;
+  };
   const label = (c, v) => (c === 'segmento' ? SEGMENTOS[v] : c === 'maturidadeBim' ? MATURIDADE_BIM[v] : v);
   const rows = (await allLeads(env.DB)).map((l) => cols.map((c) => esc(label(c, l[c]))).join(';'));
   return new Response('﻿' + [cols.join(';'), ...rows].join('\n'), {
@@ -225,7 +268,15 @@ export async function handleApi(request, env) {
     if (!(env.ADMIN_PASSWORD || '').trim()) {
       return json({ error: 'A senha do painel (ADMIN_PASSWORD) não está configurada na Cloudflare.', codigo: 'SEM_SENHA' }, 503);
     }
-    if (!(await isAdmin(request, env))) return json({ error: 'Senha incorreta.', codigo: 'SENHA_INCORRETA' }, 401);
+    const ip = request.headers.get('CF-Connecting-IP') || 'local';
+    if (await loginBloqueado(env.DB, ip)) {
+      return json({ error: 'Muitas tentativas de senha. Aguarde 15 minutos e tente novamente.', codigo: 'BLOQUEADO' }, 429);
+    }
+    if (!(await isAdmin(request, env))) {
+      await registrarFalhaLogin(env.DB, ip);
+      return json({ error: 'Senha incorreta.', codigo: 'SENHA_INCORRETA' }, 401);
+    }
+    if (path === '/api/login') await limparFalhasLogin(env.DB, ip);
 
     if (path === '/api/login' && m === 'POST') return json({ ok: true });
     if (path === '/api/leads' && m === 'GET') return json({ stages: STAGES, leads: await allLeads(env.DB) });

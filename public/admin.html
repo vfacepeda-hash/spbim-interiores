@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex" />
   <title>SPBIM — Painel de Prospecção</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -206,8 +207,10 @@
       const id = e.dataTransfer.getData('id');
       const lead = leads.find((l) => l.id === id);
       if (!lead || lead.etapa === col.dataset.stage) return;
-      const upd = await api('/api/leads/' + id, { method: 'PATCH', body: JSON.stringify({ etapa: col.dataset.stage }) });
-      Object.assign(lead, upd); render();
+      try {
+        const upd = await api('/api/leads/' + id, { method: 'PATCH', body: JSON.stringify({ etapa: col.dataset.stage }) });
+        Object.assign(lead, upd); render();
+      } catch (err) { alert('Não foi possível mover o lead: ' + err.message); }
     });
     board.addEventListener('click', (e) => { const c = e.target.closest('.lead-card'); if (c) abrir(leads.find((l) => l.id === c.dataset.id)); });
 
@@ -250,7 +253,7 @@
 
     $('dExcluir').onclick = async () => {
       if (!confirm(`Excluir definitivamente o lead "${atual.nome}"?`)) return;
-      await api('/api/leads/' + atual.id, { method: 'DELETE' });
+      try { await api('/api/leads/' + atual.id, { method: 'DELETE' }); } catch (err) { return alert(err.message); }
       leads = leads.filter((l) => l.id !== atual.id);
       dlg.close(); render();
     };
@@ -258,6 +261,7 @@
     // ---------- Exportar CSV ----------
     $('csvBtn').onclick = async () => {
       const r = await fetch('/api/leads.csv', { headers: { 'x-admin-token': hdrToken() } });
+      if (!r.ok) return alert('Não foi possível exportar. Entre novamente no painel.');
       const url = URL.createObjectURL(await r.blob());
       Object.assign(document.createElement('a'), { href: url, download: 'leads-spbim.csv' }).click();
       URL.revokeObjectURL(url);

@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+Sitemap: https://spbim-prospeccao.vfacepeda.workers.dev/sitemap.xml
