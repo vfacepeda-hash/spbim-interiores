@@ -1,16 +1,12 @@
 {
-  "name": "prospeccao-clientes",
-  "version": "1.0.0",
-  "description": "Site de prospecção de clientes: landing page com captura de leads + painel de gestão (funil).",
-  "main": "server.js",
+  "name": "spbim-prospeccao",
+  "version": "2.0.0",
+  "private": true,
+  "description": "SPBIM — site de prospecção de clientes AEC/BIM (Cloudflare Pages + D1, plano gratuito)",
   "scripts": {
-    "start": "node server.js"
+    "dev": "wrangler pages dev public --d1 DB=spbim-leads-local --port 8788"
   },
-  "dependencies": {
-    "express": "^4.21.2"
-  },
-  "engines": {
-    "node": ">=18"
-  },
-  "private": true
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
 }

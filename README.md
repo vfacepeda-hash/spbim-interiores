@@ -8,13 +8,41 @@ Landing page para captar empresas de Arquitetura, Engenharia e Construção (AEC
 - Softwares usados (Revit, ArchiCAD, Navisworks, Tekla, Civil 3D...)
 - O servidor recusa cadastros sem segmento AEC ou sem maturidade BIM
 
-## Como rodar
+## Hospedagem gratuita: Cloudflare Pages + D1
+Plano gratuito com uso comercial permitido, HTTPS automático e site sempre ativo (não "dorme").
+
+### Publicar (uma vez só)
+1. Crie uma conta em https://dash.cloudflare.com (gratuita).
+2. **Storage & Databases → D1 → Create database** → nome `spbim-leads`.
+3. **Workers & Pages → Create → Pages → Connect to Git** → escolha `spbim-prospeccao`.
+   - Framework preset: **None**
+   - Build command: *(deixe vazio)*
+   - Build output directory: `public`
+   - Clique em **Save and Deploy**.
+4. No projeto criado: **Settings → Bindings → Add → D1 database**
+   - Variable name: `DB` → Database: `spbim-leads` → Save.
+5. **Settings → Variables and Secrets → Add** → tipo **Secret**
+   - Nome: `ADMIN_PASSWORD` → valor: senha forte do painel → Save.
+6. **Deployments → (último deploy) → ⋯ → Retry deployment** para aplicar os passos 4 e 5.
+7. Pronto: `https://spbim-prospeccao.pages.dev` (painel em `/admin.html`).
+   A tabela do banco é criada automaticamente no primeiro acesso.
+
+### Domínio próprio (opcional)
+**Custom domains → Set up a custom domain** → ex.: `bim.spbim.com.br` e crie o CNAME indicado no DNS.
+
+Cada `git push` na branch `main` publica o site automaticamente.
+
+### Rodar localmente
 ```bash
 npm install
-ADMIN_PASSWORD="sua-senha-forte" npm start
+echo "ADMIN_PASSWORD=senha-local-123" > .dev.vars
+npm run dev
 ```
-- Site: http://localhost:3000
-- Painel: http://localhost:3000/admin.html
+Site: http://localhost:8788 · Painel: http://localhost:8788/admin.html
+
+### Limites do plano gratuito (folgados para captação de leads)
+- Pages: requisições ilimitadas ao site; 100 mil chamadas/dia à API
+- D1: 5 GB de armazenamento, 5 milhões de leituras/dia
 
 ## Funcionalidades
 - Formulário de captura com validação, anti-spam (honeypot + limite por IP) e consentimento LGPD
@@ -26,30 +54,13 @@ ADMIN_PASSWORD="sua-senha-forte" npm start
 - Exportação CSV (compatível com Excel)
 
 ## Personalizar
-- Textos, marca e número do WhatsApp: `public/index.html`
+- Textos, marca e WhatsApp: `public/index.html`
 - Cores: variáveis no topo de `public/styles.css`
-- Regras de pontuação: função `scoreLead` em `server.js`
+- Segmentos AEC, maturidade BIM e pontuação: `functions/api/[[route]].js`
 
-Os dados ficam em `data/leads.json`. Para alto volume, troque por um banco (PostgreSQL/MySQL).
-
-## Publicação (produção)
-
-### Opção A — Render (recomendado)
-1. Suba esta pasta para um repositório no GitHub.
-2. No Render: **New → Blueprint** e selecione o repositório (usa o `render.yaml`).
-3. Informe `ADMIN_PASSWORD` (mínimo 10 caracteres).
-4. Plano **Starter** com disco persistente de 1 GB em `/var/data` (os leads não se perdem em novos deploys).
-5. Em **Settings → Custom Domains** adicione, por ex., `bim.spbim.com.br` e crie o CNAME indicado no DNS do domínio. O HTTPS é automático.
-
-### Opção B — Servidor próprio / VPS (Docker)
-```bash
-docker build -t spbim-prospeccao .
-docker run -d -p 80:3000 -e ADMIN_PASSWORD="senha-forte-aqui" -v spbim-dados:/data --restart unless-stopped spbim-prospeccao
-```
-
-### Checklist antes de divulgar
+## Checklist antes de divulgar
 - [ ] Números reais na seção "Resultados" (estão como `XX`)
 - [ ] Depoimentos reais
 - [ ] WhatsApp comercial (hoje `5511900000000`)
 - [ ] Link da Política de Privacidade (LGPD)
-- [ ] Backup periódico de `leads.json` (ou exportar CSV pelo painel)
+- [ ] Exportar CSV pelo painel periodicamente como backup
