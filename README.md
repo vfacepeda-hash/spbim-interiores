@@ -20,7 +20,22 @@ Toda a configuração fica em `wrangler.jsonc`; cada `git push` na `main` public
 3. No projeto: **Configurações → Variáveis e segredos → Adicionar → Segredo**
    → nome `ADMIN_PASSWORD`, valor: senha forte do painel.
 4. Pronto: `https://spbim-prospeccao.<sua-conta>.workers.dev` (painel em `/admin`).
+   Páginas de serviço em `/servicos/...`.
    A tabela do banco é criada automaticamente no primeiro acesso.
+
+### Acesso ao painel (login individual)
+- **Primeiro acesso:** em `/admin`, deixe o e-mail em branco e use a **senha mestra** (segredo `ADMIN_PASSWORD`).
+- Em **Equipe**, cadastre cada pessoa (nome, e-mail, senha inicial, acesso *Comercial* ou *Administrador*).
+- Cada alteração e anotação fica registrada com o nome de quem fez. Pessoa desativada sai do painel na hora.
+- A senha mestra fica guardada para recuperação; troque-a na Cloudflare se alguém da equipe a conhecer e sair da empresa.
+
+### Aviso de lead novo no Telegram (opcional, gratuito)
+1. No Telegram, fale com **@BotFather** → `/newbot` → escolha um nome. Ele envia o **token** do robô.
+2. Crie um grupo (ex.: "Leads SPBIM"), adicione a equipe e o robô.
+3. Envie qualquer mensagem no grupo e abra `https://api.telegram.org/bot<TOKEN>/getUpdates` no navegador:
+   o número em `"chat":{"id":-100...}` é o **chat ID**.
+4. Na Cloudflare, em **Configurações → Variáveis e segredos** (fora da parte de build), adicione dois **Segredos**:
+   `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` → Implantar.
 
 ### Domínio próprio (opcional)
 **Configurações → Domínios e rotas → Adicionar → Domínio personalizado** → ex.: `bim.spbim.com.br` e crie o CNAME indicado no DNS.

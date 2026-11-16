@@ -257,12 +257,12 @@
       <h2 class="title">Soluções BIM</h2>
       <p class="subtitle">Do primeiro modelo à gestão da obra.</p>
       <div class="grid3">
-        <div class="card feature"><h3>Modelagem BIM</h3><p>Modelos de arquitetura, estrutura e instalações no nível de desenvolvimento (LOD) que o seu projeto exige.</p></div>
-        <div class="card feature"><h3>Compatibilização</h3><p>Detecção de interferências (clash detection) entre disciplinas, com relatórios e acompanhamento das correções.</p></div>
-        <div class="card feature"><h3>Implantação BIM</h3><p>Diagnóstico, plano de execução BIM (BEP), templates, bibliotecas e fluxos de trabalho para sua empresa.</p></div>
-        <div class="card feature"><h3>Treinamento</h3><p>Capacitação prática da equipe em softwares e processos BIM, com foco nos seus projetos reais.</p></div>
-        <div class="card feature"><h3>4D e 5D</h3><p>Planejamento da obra vinculado ao modelo e extração de quantitativos para orçamento.</p></div>
-        <div class="card feature"><h3>As-built e Scan to BIM</h3><p>Modelos de edificações existentes para reformas, retrofit e gestão de ativos.</p></div>
+        <a class="card feature link-card" href="/servicos/modelagem-bim"><h3>Modelagem BIM</h3><p>Modelos de arquitetura, estrutura e instalações no nível de desenvolvimento (LOD) que o seu projeto exige.</p><span class="saiba">Saiba mais →</span></a>
+        <a class="card feature link-card" href="/servicos/compatibilizacao-bim"><h3>Compatibilização</h3><p>Detecção de interferências (clash detection) entre disciplinas, com relatórios e acompanhamento das correções.</p><span class="saiba">Saiba mais →</span></a>
+        <a class="card feature link-card" href="/servicos/implantacao-bim"><h3>Implantação BIM</h3><p>Diagnóstico, plano de execução BIM (BEP), templates, bibliotecas e fluxos de trabalho para sua empresa.</p><span class="saiba">Saiba mais →</span></a>
+        <a class="card feature link-card" href="/servicos/treinamento-bim"><h3>Treinamento</h3><p>Capacitação prática da equipe em softwares e processos BIM, com foco nos seus projetos reais.</p><span class="saiba">Saiba mais →</span></a>
+        <a class="card feature link-card" href="/servicos/planejamento-4d-orcamento-5d"><h3>4D e 5D</h3><p>Planejamento da obra vinculado ao modelo e extração de quantitativos para orçamento.</p><span class="saiba">Saiba mais →</span></a>
+        <a class="card feature link-card" href="/servicos/as-built-scan-to-bim"><h3>As-built e Scan to BIM</h3><p>Modelos de edificações existentes para reformas, retrofit e gestão de ativos.</p><span class="saiba">Saiba mais →</span></a>
       </div>
     </div>
   </section>
@@ -321,6 +321,13 @@
     if (!origem) {
       const ref = document.referrer ? new URL(document.referrer).hostname : '';
       origem = ref && ref !== location.hostname ? ref : 'direto';
+    }
+
+    // Vindo de uma página de serviço (?interesse=...), já deixa o serviço selecionado
+    const interesse = params.get('interesse');
+    if (interesse) {
+      const sel = document.getElementById('interesse');
+      if ([...sel.options].some((o) => o.value === interesse || o.text === interesse)) sel.value = interesse;
     }
 
     const form = document.getElementById('leadForm');
