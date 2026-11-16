@@ -27,7 +27,6 @@ const STAGES = ['novo', 'contatado', 'qualificado', 'proposta', 'ganho', 'perdid
 const NOMES_ETAPA = { novo: 'Novo', contatado: 'Contatado', qualificado: 'Qualificado', proposta: 'Proposta', ganho: 'Ganho', perdido: 'Perdido' };
 
 // Público-alvo da SPBIM: empresas de Arquitetura, Engenharia e Construção (AEC)
-// Manter em sincronia com as opções fixas em public/index.html
 const SEGMENTOS = {
   arquitetura: 'Escritório de arquitetura',
   interiores: 'Escritório de design de interiores',

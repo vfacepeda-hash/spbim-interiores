@@ -181,6 +181,10 @@
     .sucesso .ic { font-size: 44px; }
     .sucesso h3 { margin-top: 10px; }
 
+    .privacidade { padding: 0 0 40px; }
+    .privacidade details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 20px; font-size: 14px; color: var(--muted); }
+    .privacidade summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+    .privacidade p { margin: 10px 0 0; }
     footer { padding: 32px 0; text-align: center; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); }
     .whats { position: fixed; right: 20px; bottom: 20px; width: 56px; height: 56px; border-radius: 50%; background: #25d366; color: #fff;
       display: grid; place-items: center; font-size: 28px; text-decoration: none; box-shadow: 0 8px 24px rgba(0, 0, 0, .2); z-index: 5; }
@@ -207,7 +211,7 @@
 <body>
   <header>
     <div class="wrap">
-      <a href="/" class="logo">SP<span>BIM</span></a>
+      <a href="#" class="logo">SP<span>BIM</span></a>
       <a href="#diagnostico" class="btn">Quero meu diagnóstico</a>
     </div>
   </header>
@@ -426,7 +430,7 @@
             </div>
             <div class="campo"><label for="instagram">Instagram do escritório</label><input id="instagram" name="instagram" placeholder="@seuescritorio" /></div>
             <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
-            <label class="check"><input type="checkbox" name="consentimento" /><span>Concordo em ser contatado(a) pela SPBIM e com a <a href="/politica-privacidade" target="_blank">Política de Privacidade</a>.</span></label>
+            <label class="check"><input type="checkbox" name="consentimento" /><span>Concordo em ser contatado(a) pela SPBIM e com o <a href="#privacidade">aviso de privacidade</a>.</span></label>
             <div class="acoes">
               <button type="button" class="btn ghost" id="voltar">←</button>
               <button type="submit" class="btn brass" id="enviar">Quero meu diagnóstico gratuito</button>
@@ -445,14 +449,29 @@
     </div>
   </section>
 
+  <!-- Aviso de privacidade (LGPD) -->
+  <section id="privacidade" class="privacidade">
+    <div class="wrap">
+      <details>
+        <summary>Aviso de privacidade (LGPD)</summary>
+        <p><b>Quem trata os dados:</b> SPBIM - Arquitetura, Engenharia e Construção Digital, CNPJ 27.580.118/0001-92, Rua Gen. Jardim, 770 - Vila Buarque, São Paulo - SP, CEP 01223-010.</p>
+        <p><b>Dados coletados:</b> nome, nome do escritório, WhatsApp, e-mail, Instagram (opcional), as respostas sobre o projeto e a origem do acesso. Para evitar spam, o endereço IP é guardado por poucos minutos. Não usamos cookies de rastreamento.</p>
+        <p><b>Para que usamos:</b> entrar em contato, combinar o envio dos arquivos, realizar o diagnóstico solicitado e apresentar propostas dos serviços da SPBIM. Base legal: seu consentimento e procedimentos preliminares a um contrato pedidos por você (art. 7º, I e V, da LGPD).</p>
+        <p><b>Compartilhamento e guarda:</b> não vendemos nem compartilhamos seus dados. Eles ficam armazenados na infraestrutura da Cloudflare, acessíveis apenas à equipe da SPBIM, por até 2 anos sem interação, ou até você pedir a exclusão. Os arquivos de projeto enviados são usados apenas para o diagnóstico.</p>
+        <p><b>Seus direitos:</b> você pode pedir acesso, correção, exclusão dos dados ou revogar o consentimento a qualquer momento, falando com o responsável, Julio Farias (CEO), pelo e-mail <a href="mailto:julio@spbim.com.br">julio@spbim.com.br</a>.</p>
+      </details>
+    </div>
+  </section>
+
   <footer>
     © <span id="ano"></span> SPBIM · Arquitetura, Engenharia e Construção Digital · CNPJ 27.580.118/0001-92<br />
-    Rua Gen. Jardim, 770 - Vila Buarque, São Paulo - SP · <a href="/politica-privacidade">Política de Privacidade</a>
+    Rua Gen. Jardim, 770 - Vila Buarque, São Paulo - SP · <a href="#privacidade">Privacidade</a>
   </footer>
   <a class="whats" href="https://wa.me/5511965982361?text=Ol%C3%A1%2C%20tenho%20um%20escrit%C3%B3rio%20de%20interiores%20e%20quero%20saber%20sobre%20o%20diagn%C3%B3stico." target="_blank" rel="noopener" aria-label="WhatsApp">💬</a>
 
   <script>
     document.getElementById('ano').textContent = new Date().getFullYear();
+    document.querySelectorAll('a[href="#privacidade"]').forEach((a) => a.addEventListener('click', () => { document.querySelector('#privacidade details').open = true; }));
     const $ = (id) => document.getElementById(id);
     const form = $('lpForm'), msg = $('msg');
     const erro = (t) => { msg.textContent = t; msg.className = 'msg err'; };
