@@ -52,7 +52,8 @@ npm run dev
 Landing page: http://localhost:8788/interiores
 
 ## Personalizar
-- Textos, promessa, cores e WhatsApp: `public/interiores.html`
+- Textos, promessa, cores e WhatsApp: `public/interiores.html` (cores da SPBIM nas variáveis do topo do `<style>`)
+- Logo e ícones: `public/img/` (logo normal, logo branco para fundos escuros e ícone da lâmpada)
 
 ## Antes de divulgar
 - [ ] Confirmar os compromissos da promessa: prazo de 5 dias úteis, reunião de 30 minutos e sigilo dos arquivos
