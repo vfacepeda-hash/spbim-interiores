@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>SPBIM — Painel de Prospecção</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Login -->
+  <div id="login" class="card login-box">
+    <h2>SPBIM · Painel de Prospecção</h2>
+    <form id="loginForm">
+      <label for="senha">Senha de administrador</label>
+      <input id="senha" type="password" required autocomplete="current-password" />
+      <button class="btn" style="width:100%;margin-top:14px">Entrar</button>
+      <div id="loginMsg" class="msg"></div>
+    </form>
+  </div>
+
+  <!-- App -->
+  <div id="app" class="container" hidden>
+    <div class="admin-top">
+      <h1>SPBIM · Funil de prospecção</h1>
+      <div class="toolbar">
+        <input id="busca" placeholder="Buscar nome, empresa, e-mail..." />
+        <select id="filtroSeg"><option value="">Todos os segmentos</option></select>
+        <select id="filtroBim"><option value="">Qualquer maturidade BIM</option></select>
+        <select id="filtroScore">
+          <option value="">Todos os leads</option>
+          <option value="hot">🔥 Quentes (70+)</option>
+          <option value="warm">Mornos (40–69)</option>
+          <option value="cold">Frios (&lt;40)</option>
+        </select>
+        <button class="btn small" id="novoBtn">+ Novo lead</button>
+        <button class="btn small secondary" id="csvBtn">Exportar CSV</button>
+        <button class="btn small secondary" id="sairBtn">Sair</button>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><span>Total de leads</span><strong id="kTotal">0</strong></div>
+      <div class="kpi"><span>Novos (7 dias)</span><strong id="kSemana">0</strong></div>
+      <div class="kpi"><span>Taxa de conversão</span><strong id="kConv">0%</strong></div>
+      <div class="kpi"><span>Pipeline em aberto</span><strong id="kPipe">R$ 0</strong></div>
+    </div>
+
+    <div class="board" id="board"></div>
+  </div>
+
+  <!-- Detalhe / edição -->
+  <dialog id="dlg">
+    <form class="card" id="leadEdit" method="dialog">
+      <h2 id="dTitulo">Lead</h2>
+      <div class="row">
+        <div><label>Nome</label><input name="nome" required /></div>
+        <div><label>Empresa</label><input name="empresa" /></div>
+      </div>
+      <div class="row">
+        <div><label>E-mail</label><input name="email" type="email" /></div>
+        <div><label>Telefone</label><input name="telefone" /></div>
+      </div>
+      <div class="row">
+        <div><label>Cargo</label><input name="cargo" /></div>
+        <div><label>Softwares</label><input name="softwaresTxt" readonly /></div>
+      </div>
+      <div class="row">
+        <div><label>Segmento AEC</label><select name="segmento" id="dSeg"></select></div>
+        <div><label>Maturidade BIM</label><select name="maturidadeBim" id="dBim"></select></div>
+      </div>
+      <div class="row">
+        <div><label>Cidade / UF</label><input name="cidade" /></div>
+        <div><label>Serviço de interesse</label><input name="interesse" /></div>
+      </div>
+      <div class="row">
+        <div><label>Etapa</label><select name="etapa" id="dEtapa"></select></div>
+        <div><label>Valor estimado (R$)</label><input name="valor" type="number" min="0" step="100" /></div>
+      </div>
+      <div class="row">
+        <div><label>Próximo contato</label><input name="proximoContato" type="date" /></div>
+        <div><label>Origem</label><input name="origem" readonly /></div>
+      </div>
+      <div id="dExtra" class="meta" style="margin-top:10px;font-size:14px;color:var(--muted)"></div>
+
+      <label>Histórico / anotações</label>
+      <div class="notes" id="dNotas"></div>
+      <textarea name="nota" rows="2" placeholder="Ex.: Liguei, pediu retorno na sexta."></textarea>
+
+      <div class="actions">
+        <a class="btn small secondary" id="dWhats" target="_blank">WhatsApp</a>
+        <a class="btn small secondary" id="dMail">E-mail</a>
+        <button class="btn small danger" type="button" id="dExcluir">Excluir</button>
+        <button class="btn small secondary" type="button" id="dFechar">Cancelar</button>
+        <button class="btn small" type="submit">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const NOMES = { novo: 'Novo', contatado: 'Contatado', qualificado: 'Qualificado', proposta: 'Proposta', ganho: 'Ganho ✅', perdido: 'Perdido' };
+    let token = sessionStorage.getItem('adminToken') || '';
+    let stages = [], leads = [], atual = null, opc = { segmentos: {}, maturidadeBim: {} };
+
+    const $ = (id) => document.getElementById(id);
+    const brl = (n) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const nivel = (s) => (s >= 70 ? 'hot' : s >= 40 ? 'warm' : 'cold');
+
+    async function api(url, opts = {}) {
+      const r = await fetch(url, { ...opts, headers: { 'Content-Type': 'application/json', 'x-admin-token': token, ...(opts.headers || {}) } });
+      if (r.status === 401) { sair(); throw new Error('Sessão expirada'); }
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || 'Erro');
+      return j;
+    }
+
+    // ---------- Login ----------
+    $('loginForm').onsubmit = async (e) => {
+      e.preventDefault();
+      token = $('senha').value;
+      const r = await fetch('/api/login', { method: 'POST', headers: { 'x-admin-token': token } });
+      if (r.ok) { sessionStorage.setItem('adminToken', token); iniciar(); }
+      else { $('loginMsg').textContent = 'Senha incorreta.'; $('loginMsg').className = 'msg err'; }
+    };
+    function sair() { sessionStorage.removeItem('adminToken'); token = ''; $('app').hidden = true; $('login').hidden = false; }
+    $('sairBtn').onclick = sair;
+
+    async function iniciar() {
+      $('login').hidden = true; $('app').hidden = false;
+      await carregar();
+    }
+    async function carregar() {
+      opc = await (await fetch('/api/opcoes')).json();
+      const opts = (obj, vazio) => `<option value="">${vazio}</option>` + Object.entries(obj).map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+      $('filtroSeg').innerHTML = opts(opc.segmentos, 'Todos os segmentos');
+      $('filtroBim').innerHTML = opts(opc.maturidadeBim, 'Qualquer maturidade BIM');
+      $('dSeg').innerHTML = opts(opc.segmentos, '—');
+      $('dBim').innerHTML = opts(opc.maturidadeBim, '—');
+      const j = await api('/api/leads');
+      stages = j.stages; leads = j.leads;
+      $('dEtapa').innerHTML = stages.map((s) => `<option value="${s}">${NOMES[s]}</option>`).join('');
+      render();
+    }
+
+    // ---------- Render ----------
+    function filtrados() {
+      const q = $('busca').value.toLowerCase();
+      const f = $('filtroScore').value, fs = $('filtroSeg').value, fb = $('filtroBim').value;
+      return leads.filter((l) =>
+        (!fs || l.segmento === fs) && (!fb || l.maturidadeBim === fb) &&
+        (!q || [l.nome, l.empresa, l.email, l.telefone].join(' ').toLowerCase().includes(q)) &&
+        (!f || nivel(l.score) === f));
+    }
+
+    function render() {
+      const lista = filtrados();
+      const semana = Date.now() - 7 * 864e5;
+      const fechados = leads.filter((l) => l.etapa === 'ganho' || l.etapa === 'perdido');
+      const ganhos = leads.filter((l) => l.etapa === 'ganho').length;
+      $('kTotal').textContent = leads.length;
+      $('kSemana').textContent = leads.filter((l) => new Date(l.criadoEm) > semana).length;
+      $('kConv').textContent = fechados.length ? Math.round((ganhos / fechados.length) * 100) + '%' : '—';
+      $('kPipe').textContent = brl(leads.filter((l) => !['ganho', 'perdido'].includes(l.etapa)).reduce((s, l) => s + (l.valor || 0), 0));
+
+      $('board').innerHTML = stages.map((s) => {
+        const itens = lista.filter((l) => l.etapa === s).sort((a, b) => b.score - a.score);
+        const total = itens.reduce((t, l) => t + (l.valor || 0), 0);
+        return `<div class="col" data-stage="${s}">
+          <h3>${NOMES[s]} <small>${itens.length}${total ? ' · ' + brl(total) : ''}</small></h3>
+          ${itens.map((l) => `
+            <div class="lead-card" draggable="true" data-id="${l.id}">
+              <strong>${esc(l.nome)}</strong>
+              <div class="meta">${esc(l.empresa || '—')}${l.cargo ? ' · ' + esc(l.cargo) : ''}</div>
+              ${l.proximoContato ? `<div class="meta">📅 ${new Date(l.proximoContato + 'T12:00').toLocaleDateString('pt-BR')}</div>` : ''}
+              ${l.segmento ? `<span class="badge seg">${esc(opc.segmentos[l.segmento] || l.segmento)}</span><br>` : ''}
+              <span class="badge ${nivel(l.score)}">Score ${l.score}</span>
+              ${l.valor ? `<span class="meta"> · ${brl(l.valor)}</span>` : ''}
+            </div>`).join('')}
+        </div>`;
+      }).join('');
+    }
+
+    $('busca').oninput = render;
+    $('filtroScore').onchange = render;
+    $('filtroSeg').onchange = render;
+    $('filtroBim').onchange = render;
+
+    // ---------- Arrastar entre etapas ----------
+    const board = $('board');
+    board.addEventListener('dragstart', (e) => { const c = e.target.closest('.lead-card'); if (c) e.dataTransfer.setData('id', c.dataset.id); });
+    board.addEventListener('dragover', (e) => { const col = e.target.closest('.col'); if (col) { e.preventDefault(); col.classList.add('over'); } });
+    board.addEventListener('dragleave', (e) => { const col = e.target.closest('.col'); if (col) col.classList.remove('over'); });
+    board.addEventListener('drop', async (e) => {
+      const col = e.target.closest('.col'); if (!col) return;
+      e.preventDefault(); col.classList.remove('over');
+      const id = e.dataTransfer.getData('id');
+      const lead = leads.find((l) => l.id === id);
+      if (!lead || lead.etapa === col.dataset.stage) return;
+      const upd = await api('/api/leads/' + id, { method: 'PATCH', body: JSON.stringify({ etapa: col.dataset.stage }) });
+      Object.assign(lead, upd); render();
+    });
+    board.addEventListener('click', (e) => { const c = e.target.closest('.lead-card'); if (c) abrir(leads.find((l) => l.id === c.dataset.id)); });
+
+    // ---------- Modal ----------
+    const dlg = $('dlg'), fm = $('leadEdit');
+    function abrir(lead) {
+      atual = lead;
+      fm.reset();
+      $('dTitulo').textContent = lead ? lead.nome : 'Novo lead';
+      const l = lead || { etapa: 'novo', origem: 'manual' };
+      for (const k of ['nome', 'empresa', 'email', 'telefone', 'cargo', 'cidade', 'segmento', 'maturidadeBim', 'interesse', 'etapa', 'valor', 'proximoContato', 'origem']) fm[k].value = l[k] ?? '';
+      fm.softwaresTxt.value = (l.softwares || []).join(', ');
+      $('dExtra').innerHTML = lead ? `Score: <b>${lead.score}</b> · Porte: ${esc(lead.porte || '—')} · Prazo: ${esc(lead.prazo || '—')} · Cadastrado em ${new Date(lead.criadoEm).toLocaleString('pt-BR')}${lead.mensagem ? `<br>Mensagem: “${esc(lead.mensagem)}”` : ''}` : '';
+      $('dNotas').innerHTML = lead && lead.notas.length
+        ? lead.notas.slice().reverse().map((n) => `<div><time>${new Date(n.data).toLocaleString('pt-BR')}</time>${n.sistema ? '<i>' + esc(n.texto) + '</i>' : esc(n.texto)}</div>`).join('')
+        : '<div style="color:var(--muted)">Nenhuma anotação.</div>';
+      const fone = (l.telefone || '').replace(/\D/g, '');
+      $('dWhats').hidden = !fone; $('dWhats').href = `https://wa.me/${fone.length <= 11 ? '55' + fone : fone}?text=${encodeURIComponent(`Olá ${(l.nome || '').split(' ')[0]}, tudo bem? Aqui é da SPBIM, recebemos seu pedido de diagnóstico BIM pelo site.`)}`;
+      $('dMail').hidden = !l.email; $('dMail').href = `mailto:${l.email}?subject=${encodeURIComponent('SPBIM — seu diagnóstico BIM')}`;
+      $('dExcluir').hidden = !lead;
+      dlg.showModal();
+    }
+    $('novoBtn').onclick = () => abrir(null);
+    $('dFechar').onclick = () => dlg.close();
+
+    fm.onsubmit = async (e) => {
+      e.preventDefault();
+      const d = Object.fromEntries(new FormData(fm));
+      delete d.origem; delete d.softwaresTxt;
+      try {
+        if (atual) {
+          const upd = await api('/api/leads/' + atual.id, { method: 'PATCH', body: JSON.stringify(d) });
+          Object.assign(atual, upd);
+        } else {
+          leads.push(await api('/api/admin/leads', { method: 'POST', body: JSON.stringify(d) }));
+        }
+        dlg.close(); render();
+      } catch (err) { alert(err.message); }
+    };
+
+    $('dExcluir').onclick = async () => {
+      if (!confirm(`Excluir definitivamente o lead "${atual.nome}"?`)) return;
+      await api('/api/leads/' + atual.id, { method: 'DELETE' });
+      leads = leads.filter((l) => l.id !== atual.id);
+      dlg.close(); render();
+    };
+
+    // ---------- Exportar CSV ----------
+    $('csvBtn').onclick = async () => {
+      const r = await fetch('/api/leads.csv', { headers: { 'x-admin-token': token } });
+      const url = URL.createObjectURL(await r.blob());
+      Object.assign(document.createElement('a'), { href: url, download: 'leads-spbim.csv' }).click();
+      URL.revokeObjectURL(url);
+    };
+
+    if (token) iniciar().catch(sair);
+  </script>
+</body>
+</html>

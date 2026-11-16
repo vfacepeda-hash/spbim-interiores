@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SPBIM — Soluções BIM para Arquitetura, Engenharia e Construção</title>
+  <meta name="description" content="Modelagem, compatibilização, implantação e treinamento BIM para escritórios de arquitetura, engenharia, construtoras e incorporadoras." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!--
+    PERSONALIZE: números da seção "Resultados", depoimentos, link da Política de Privacidade
+    e o número do WhatsApp (botão flutuante no final) devem ser trocados pelos dados reais da SPBIM.
+  -->
+  <header class="nav">
+    <div class="container">
+      <a href="#" class="logo">SP<span>BIM</span></a>
+      <nav>
+        <a href="#para-quem">Para quem</a>
+        <a href="#solucoes">Soluções</a>
+        <a href="#como-funciona">Como funciona</a>
+        <a href="#contato" class="btn small">Fale com um especialista</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="hero" id="contato">
+    <div class="container">
+      <div>
+        <span class="tag">Arquitetura · Engenharia · Construção</span>
+        <h1>Leve seus projetos e obras para o BIM com quem vive a metodologia</h1>
+        <p class="lead">A SPBIM apoia escritórios de arquitetura, engenharia, construtoras e incorporadoras a projetar, compatibilizar e construir com BIM, reduzindo retrabalho, conflitos em obra e desvios de orçamento.</p>
+        <ul>
+          <li>Modelagem e compatibilização BIM multidisciplinar</li>
+          <li>Implantação BIM com processos, templates e padrões</li>
+          <li>Planejamento 4D, quantitativos e orçamento 5D</li>
+          <li>Preparação para o Decreto nº 10.306/2020 (BIM em obras públicas)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Solicite um diagnóstico BIM gratuito</h2>
+        <p class="form-note">Atendimento exclusivo para empresas do setor AEC.</p>
+        <form id="leadForm" novalidate>
+          <label for="nome">Nome*</label>
+          <input id="nome" name="nome" required autocomplete="name" />
+
+          <div class="row">
+            <div>
+              <label for="email">E-mail corporativo*</label>
+              <input id="email" name="email" type="email" required autocomplete="email" />
+            </div>
+            <div>
+              <label for="telefone">WhatsApp</label>
+              <input id="telefone" name="telefone" type="tel" placeholder="(11) 90000-0000" autocomplete="tel" />
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="empresa">Empresa*</label>
+              <input id="empresa" name="empresa" required autocomplete="organization" />
+            </div>
+            <div>
+              <label for="cargo">Cargo</label>
+              <input id="cargo" name="cargo" placeholder="Ex.: Diretor técnico" autocomplete="organization-title" />
+            </div>
+          </div>
+
+          <label for="segmento">Segmento da empresa*</label>
+          <select id="segmento" name="segmento" required>
+            <option value="">Selecione</option>
+          </select>
+
+          <label for="maturidadeBim">Como está o uso de BIM na empresa?*</label>
+          <select id="maturidadeBim" name="maturidadeBim" required>
+            <option value="">Selecione</option>
+          </select>
+
+          <label>Softwares que a equipe utiliza</label>
+          <div class="chips" id="softwares"></div>
+
+          <div class="row">
+            <div>
+              <label for="interesse">Serviço de interesse</label>
+              <select id="interesse" name="interesse">
+                <option value="">Selecione</option>
+                <option>Modelagem BIM</option>
+                <option>Compatibilização / detecção de conflitos</option>
+                <option>Implantação BIM na empresa</option>
+                <option>Treinamento da equipe</option>
+                <option>Planejamento 4D / Orçamento 5D</option>
+                <option>As-built / Scan to BIM</option>
+                <option>Adequação ao Decreto 10.306 (obras públicas)</option>
+              </select>
+            </div>
+            <div>
+              <label for="prazo">Quando pretende começar?</label>
+              <select id="prazo" name="prazo">
+                <option value="">Selecione</option>
+                <option value="imediato">Imediatamente</option>
+                <option value="3-meses">Em até 3 meses</option>
+                <option value="pesquisando">Só pesquisando</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="porte">Nº de colaboradores</label>
+              <select id="porte" name="porte">
+                <option value="">Selecione</option>
+                <option>1-10</option><option>11-50</option><option>51-200</option><option>200+</option>
+              </select>
+            </div>
+            <div>
+              <label for="cidade">Cidade / UF</label>
+              <input id="cidade" name="cidade" placeholder="São Paulo / SP" />
+            </div>
+          </div>
+
+          <label for="mensagem">Conte sobre o projeto ou obra</label>
+          <textarea id="mensagem" name="mensagem" rows="3" placeholder="Ex.: Edifício residencial de 20 pavimentos, precisamos compatibilizar estrutura e instalações."></textarea>
+
+          <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+
+          <label class="check">
+            <input type="checkbox" name="consentimento" required />
+            Concordo em ser contatado pela SPBIM e com a <a href="#" target="_blank">Política de Privacidade</a> (LGPD).
+          </label>
+
+          <button class="btn" type="submit" style="width:100%;margin-top:14px">Quero meu diagnóstico BIM</button>
+          <div id="formMsg" class="msg" role="status"></div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <section id="para-quem">
+    <div class="container">
+      <h2 class="title">Para quem é a SPBIM</h2>
+      <p class="subtitle">Trabalhamos exclusivamente com empresas da cadeia de Arquitetura, Engenharia e Construção.</p>
+      <div class="grid3">
+        <div class="card feature"><div class="icon">🏛️</div><h3>Escritórios de arquitetura</h3><p>Projetos em BIM com documentação consistente, menos retrabalho e entregas mais rápidas.</p></div>
+        <div class="card feature"><div class="icon">📐</div><h3>Engenharia e projetos complementares</h3><p>Estrutura, hidráulica, elétrica e HVAC modelados e compatibilizados no mesmo ambiente.</p></div>
+        <div class="card feature"><div class="icon">🏗️</div><h3>Construtoras e incorporadoras</h3><p>Conflitos resolvidos antes da obra, quantitativos confiáveis e controle de prazo e custo.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="solucoes" class="cta">
+    <div class="container">
+      <h2 class="title">Soluções BIM</h2>
+      <p class="subtitle">Do primeiro modelo à gestão da obra.</p>
+      <div class="grid3">
+        <div class="card feature"><h3>Modelagem BIM</h3><p>Modelos de arquitetura, estrutura e instalações no nível de desenvolvimento (LOD) que o seu projeto exige.</p></div>
+        <div class="card feature"><h3>Compatibilização</h3><p>Detecção de interferências (clash detection) entre disciplinas, com relatórios e acompanhamento das correções.</p></div>
+        <div class="card feature"><h3>Implantação BIM</h3><p>Diagnóstico, plano de execução BIM (BEP), templates, bibliotecas e fluxos de trabalho para sua empresa.</p></div>
+        <div class="card feature"><h3>Treinamento</h3><p>Capacitação prática da equipe em softwares e processos BIM, com foco nos seus projetos reais.</p></div>
+        <div class="card feature"><h3>4D e 5D</h3><p>Planejamento da obra vinculado ao modelo e extração de quantitativos para orçamento.</p></div>
+        <div class="card feature"><h3>As-built e Scan to BIM</h3><p>Modelos de edificações existentes para reformas, retrofit e gestão de ativos.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="como-funciona">
+    <div class="container">
+      <h2 class="title">Como funciona</h2>
+      <p class="subtitle">Um processo simples para começar.</p>
+      <div class="stats steps">
+        <div><strong>1</strong>Você preenche o formulário</div>
+        <div><strong>2</strong>Diagnóstico BIM com um especialista</div>
+        <div><strong>3</strong>Proposta com escopo, prazo e custo</div>
+        <div><strong>4</strong>Execução e acompanhamento</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="resultados" class="cta">
+    <div class="container stats">
+      <!-- SUBSTITUA pelos números reais da SPBIM -->
+      <div><strong>XX+</strong>projetos em BIM</div>
+      <div><strong>XX mil m²</strong>modelados</div>
+      <div><strong>XX%</strong>menos conflitos em obra</div>
+      <div><strong>24h</strong>para retorno do contato</div>
+    </div>
+  </section>
+
+  <section id="depoimentos">
+    <div class="container">
+      <h2 class="title">Quem já trabalha com a SPBIM</h2>
+      <p class="subtitle">Substitua pelos depoimentos reais dos seus clientes.</p>
+      <div class="grid3">
+        <div class="card"><blockquote>"Depoimento de um escritório de arquitetura."<footer>Nome — Escritório</footer></blockquote></div>
+        <div class="card"><blockquote>"Depoimento de uma construtora sobre a compatibilização."<footer>Nome — Construtora</footer></blockquote></div>
+        <div class="card"><blockquote>"Depoimento sobre a implantação BIM."<footer>Nome — Empresa</footer></blockquote></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta">
+    <div class="container">
+      <h2 class="title">Pronto para levar sua empresa ao BIM?</h2>
+      <p class="subtitle">O diagnóstico é gratuito e leva menos de 1 minuto para solicitar.</p>
+      <a href="#contato" class="btn">Solicitar diagnóstico BIM</a>
+    </div>
+  </section>
+
+  <footer class="site">© <span id="ano"></span> SPBIM · Soluções BIM para Arquitetura, Engenharia e Construção</footer>
+
+  <!-- TROQUE pelo WhatsApp comercial da SPBIM (formato 55 + DDD + número) -->
+  <a class="whats" href="https://wa.me/5511900000000?text=Ol%C3%A1%2C%20vim%20pelo%20site%20e%20quero%20um%20diagn%C3%B3stico%20BIM" target="_blank" aria-label="WhatsApp">💬</a>
+
+  <script>
+    document.getElementById('ano').textContent = new Date().getFullYear();
+
+    // Carrega segmentos AEC, níveis de maturidade BIM e softwares definidos no servidor
+    fetch('/api/opcoes').then((r) => r.json()).then((o) => {
+      const add = (sel, obj) => Object.entries(obj).forEach(([v, t]) => sel.add(new Option(t, v)));
+      add(document.getElementById('segmento'), o.segmentos);
+      add(document.getElementById('maturidadeBim'), o.maturidadeBim);
+      document.getElementById('softwares').innerHTML = o.softwares
+        .map((s) => `<label><input type="checkbox" name="softwares" value="${s}"> ${s}</label>`).join('');
+    });
+
+    // Registra a origem do visitante (UTM / referência)
+    const params = new URLSearchParams(location.search);
+    const origem = [params.get('utm_source'), params.get('utm_medium'), params.get('utm_campaign')]
+      .filter(Boolean).join(' / ') || (document.referrer ? new URL(document.referrer).hostname : 'direto');
+
+    const form = document.getElementById('leadForm');
+    const msg = document.getElementById('formMsg');
+    const erro = (t) => { msg.textContent = t; msg.className = 'msg err'; };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.className = 'msg';
+      const fd = new FormData(form);
+      const data = Object.fromEntries(fd);
+      data.softwares = fd.getAll('softwares');
+      data.consentimento = form.consentimento.checked;
+      data.origem = origem;
+
+      if (!data.nome || !data.email || !form.email.checkValidity()) return erro('Preencha nome e um e-mail válido.');
+      if (!data.empresa) return erro('Informe o nome da empresa.');
+      if (!data.segmento) return erro('Selecione o segmento da sua empresa. Atendemos empresas de arquitetura, engenharia e construção.');
+      if (!data.maturidadeBim) return erro('Informe como está o uso de BIM na sua empresa.');
+      if (!data.consentimento) return erro('Marque o consentimento para continuar.');
+
+      const btn = form.querySelector('button');
+      btn.disabled = true; btn.textContent = 'Enviando...';
+      try {
+        const r = await fetch('/api/leads', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
+        });
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error || 'Erro ao enviar');
+        form.reset();
+        msg.textContent = 'Recebemos seus dados! Um especialista BIM da SPBIM entrará em contato em breve.';
+        msg.className = 'msg ok';
+      } catch (err) {
+        erro(err.message);
+      } finally {
+        btn.disabled = false; btn.textContent = 'Quero meu diagnóstico BIM';
+      }
+    });
+  </script>
+</body>
+</html>

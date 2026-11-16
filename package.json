@@ -1,0 +1,16 @@
+{
+  "name": "prospeccao-clientes",
+  "version": "1.0.0",
+  "description": "Site de prospecção de clientes: landing page com captura de leads + painel de gestão (funil).",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "private": true
+}
