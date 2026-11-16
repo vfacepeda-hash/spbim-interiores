@@ -1,62 +1,59 @@
 # SPBIM — Landing page de diagnóstico para escritórios de interiores
 
-- **`/interiores`** — landing page com formulário em 2 etapas e aviso de privacidade (LGPD) na própria página.
-  A raiz `/` e os endereços antigos (`/servicos/...`, `/politica-privacidade`) redirecionam para ela.
-- **`/admin`** — painel da equipe: funil de leads, login individual, origem dos leads e exportação CSV.
-- **API** em `src/api.js` (Cloudflare Workers + banco D1) e aviso de lead novo no Telegram (opcional).
+- **`/interiores`**: landing page com formulário em 2 etapas e aviso de privacidade (LGPD) na própria página.
+  A raiz `/` e os endereços antigos (`/admin`, `/servicos/...`, `/politica-privacidade`) redirecionam para ela.
+- **API** (`src/api.js`): recebe o formulário, grava o lead no banco D1 e avisa a equipe no Telegram.
 
-## Hospedagem gratuita: Cloudflare Workers + D1
-Plano gratuito com uso comercial permitido, HTTPS automático e site sempre ativo (não "dorme").
+Hospedagem gratuita na Cloudflare (Workers + D1): uso comercial permitido, HTTPS automático e site sempre ativo.
 Toda a configuração fica em `wrangler.jsonc`; cada `git push` na `main` publica sozinho.
 
-### Publicar (uma vez só)
-1. **Armazenamento e bancos de dados → D1 → Criar banco de dados** → nome `spbim-leads`.
-   Copie o **ID do banco** e cole em `wrangler.jsonc` no campo `database_id`.
-2. **Trabalhadores e Páginas → Criar → Importar repositório** → `spbim-prospeccao`
-   (nome do projeto: `spbim-prospeccao`; comando de implantação: `npx wrangler deploy`).
-3. No projeto: **Configurações → Variáveis e segredos → Adicionar → Segredo**
-   → nome `ADMIN_PASSWORD`, valor: senha forte do painel.
-4. Pronto: `https://spbim-prospeccao.<sua-conta>.workers.dev` (painel em `/admin`).
-   A tabela do banco é criada automaticamente no primeiro acesso.
-
-### Acesso ao painel (login individual)
-- **Primeiro acesso:** em `/admin`, deixe o e-mail em branco e use a **senha mestra** (segredo `ADMIN_PASSWORD`).
-- Em **Equipe**, cadastre cada pessoa (nome, e-mail, senha inicial, acesso *Comercial* ou *Administrador*).
-- Cada alteração e anotação fica registrada com o nome de quem fez. Pessoa desativada sai do painel na hora.
-- A senha mestra fica guardada para recuperação; troque-a na Cloudflare se alguém da equipe a conhecer e sair da empresa.
-
-### Aviso de lead novo no Telegram (opcional, gratuito)
+## Aviso de lead novo no Telegram (essencial: é assim que a equipe fica sabendo)
 1. No Telegram, fale com **@BotFather** → `/newbot` → escolha um nome. Ele envia o **token** do robô.
 2. Crie um grupo (ex.: "Leads SPBIM"), adicione a equipe e o robô.
 3. Envie qualquer mensagem no grupo e abra `https://api.telegram.org/bot<TOKEN>/getUpdates` no navegador:
    o número em `"chat":{"id":-100...}` é o **chat ID**.
-4. Na Cloudflare, em **Configurações → Variáveis e segredos** (fora da parte de build), adicione dois **Segredos**:
-   `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` → Implantar.
+4. Na Cloudflare, no Worker `spbim-prospeccao` → **Configurações → Variáveis e segredos** (fora da parte de build),
+   adicione dois **Segredos**: `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` → Implantar.
 
-### Domínio próprio (opcional)
-**Configurações → Domínios e rotas → Adicionar → Domínio personalizado** → ex.: `bim.spbim.com.br` e crie o CNAME indicado no DNS.
+Cada pedido chega no grupo com nome, escritório, tipo e fase do projeto, contato e um link para responder no WhatsApp.
 
-Cada `git push` na branch `main` publica o site automaticamente.
+## Ver todos os leads (sem painel)
+Na Cloudflare: **Armazenamento e bancos de dados → D1 → `spbim-leads` → Console**, e execute:
 
-### Rodar localmente
+```sql
+SELECT criado_em,
+       json_extract(data, '$.nome')     AS nome,
+       json_extract(data, '$.empresa')  AS escritorio,
+       json_extract(data, '$.telefone') AS whatsapp,
+       email,
+       json_extract(data, '$.mensagem') AS projeto,
+       json_extract(data, '$.origem')   AS origem
+FROM leads
+ORDER BY criado_em DESC;
+```
+
+Para excluir um lead a pedido do titular (LGPD): `DELETE FROM leads WHERE email = 'email@do.lead';`
+
+## Publicar do zero (se precisar recriar)
+1. **Armazenamento e bancos de dados → D1 → Criar banco de dados** → `spbim-leads`; cole o ID em `wrangler.jsonc` (`database_id`).
+2. **Trabalhadores e Páginas → Criar → Importar repositório** → `spbim-prospeccao` (comando de implantação: `npx wrangler deploy`).
+3. Configure os segredos do Telegram (acima).
+
+### Domínio próprio
+No Worker: **Configurações → Domínios e rotas → Adicionar → Domínio personalizado** → ex.: `bim.spbim.com.br`
+(o `spbim.com.br` já usa o DNS da Cloudflare). Depois, atualize os endereços em `public/interiores.html`
+(canonical e og:url), `public/sitemap.xml` e `public/robots.txt`.
+
+## Rodar localmente
 ```bash
 npm install
-echo "ADMIN_PASSWORD=senha-local-123" > .dev.vars
 npm run dev
 ```
-Site: http://localhost:8788 · Painel: http://localhost:8788/admin
-
-### Limites do plano gratuito (folgados para captação de leads)
-- Workers: arquivos do site ilimitados; 100 mil chamadas/dia à API
-- D1: 5 GB de armazenamento, 5 milhões de leituras/dia
-
+Landing page: http://localhost:8788/interiores
 
 ## Personalizar
-- Textos, promessa e WhatsApp: `public/interiores.html`
-- Cores da landing page: variáveis no topo de `public/interiores.html` (o painel usa `public/styles.css`)
-- Segmentos AEC, maturidade BIM e pontuação: `src/api.js`
+- Textos, promessa, cores e WhatsApp: `public/interiores.html`
 
 ## Antes de divulgar
 - [ ] Confirmar os compromissos da promessa: prazo de 5 dias úteis, reunião de 30 minutos e sigilo dos arquivos
 - [ ] Configurar o aviso de lead novo no Telegram
-- [ ] Exportar o CSV pelo painel periodicamente como backup
