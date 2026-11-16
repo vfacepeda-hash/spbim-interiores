@@ -1,7 +1,7 @@
 {
   // Configuração do Worker na Cloudflare (o nome precisa ser igual ao do projeto no painel)
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "spbim-prospeccao",
+  "name": "spbim-interiores",
   "main": "src/worker.js",
   "compatibility_date": "2025-09-01",
   "workers_dev": true,

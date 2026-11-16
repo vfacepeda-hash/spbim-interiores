@@ -12,7 +12,7 @@ Toda a configuração fica em `wrangler.jsonc`; cada `git push` na `main` public
 2. Crie um grupo (ex.: "Leads SPBIM"), adicione a equipe e o robô.
 3. Envie qualquer mensagem no grupo e abra `https://api.telegram.org/bot<TOKEN>/getUpdates` no navegador:
    o número em `"chat":{"id":-100...}` é o **chat ID**.
-4. Na Cloudflare, no Worker `spbim-prospeccao` → **Configurações → Variáveis e segredos** (fora da parte de build),
+4. Na Cloudflare, no Worker `spbim-interiores` → **Configurações → Variáveis e segredos** (fora da parte de build),
    adicione dois **Segredos**: `TELEGRAM_BOT_TOKEN` e `TELEGRAM_CHAT_ID` → Implantar.
 
 Cada pedido chega no grupo com nome, escritório, tipo e fase do projeto, contato e um link para responder no WhatsApp.
@@ -36,7 +36,7 @@ Para excluir um lead a pedido do titular (LGPD): `DELETE FROM leads WHERE email 
 
 ## Publicar do zero (se precisar recriar)
 1. **Armazenamento e bancos de dados → D1 → Criar banco de dados** → `spbim-leads`; cole o ID em `wrangler.jsonc` (`database_id`).
-2. **Trabalhadores e Páginas → Criar → Importar repositório** → `spbim-prospeccao` (comando de implantação: `npx wrangler deploy`).
+2. **Trabalhadores e Páginas → Criar → Importar repositório** → `spbim-prospeccao` (nome do projeto: `spbim-interiores`; comando de implantação: `npx wrangler deploy`).
 3. Configure os segredos do Telegram (acima).
 
 ### Domínio próprio

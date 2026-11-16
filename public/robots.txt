@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
-Sitemap: https://spbim-prospeccao.vfacepeda.workers.dev/sitemap.xml
+Sitemap: https://spbim-interiores.interioresspbim.workers.dev/sitemap.xml
