@@ -2,9 +2,10 @@
   "name": "spbim-prospeccao",
   "version": "2.0.0",
   "private": true,
-  "description": "SPBIM — site de prospecção de clientes AEC/BIM (Cloudflare Pages + D1, plano gratuito)",
+  "description": "SPBIM — site de prospecção de clientes AEC/BIM (Cloudflare Workers + D1, plano gratuito)",
   "scripts": {
-    "dev": "wrangler pages dev public --d1 DB=spbim-leads-local --port 8788"
+    "dev": "wrangler dev --port 8788",
+    "deploy": "wrangler deploy"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"

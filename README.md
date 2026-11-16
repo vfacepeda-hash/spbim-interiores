@@ -8,27 +8,22 @@ Landing page para captar empresas de Arquitetura, Engenharia e Construção (AEC
 - Softwares usados (Revit, ArchiCAD, Navisworks, Tekla, Civil 3D...)
 - O servidor recusa cadastros sem segmento AEC ou sem maturidade BIM
 
-## Hospedagem gratuita: Cloudflare Pages + D1
+## Hospedagem gratuita: Cloudflare Workers + D1
 Plano gratuito com uso comercial permitido, HTTPS automático e site sempre ativo (não "dorme").
+Toda a configuração fica em `wrangler.jsonc`; cada `git push` na `main` publica sozinho.
 
 ### Publicar (uma vez só)
-1. Crie uma conta em https://dash.cloudflare.com (gratuita).
-2. **Storage & Databases → D1 → Create database** → nome `spbim-leads`.
-3. **Workers & Pages → Create → Pages → Connect to Git** → escolha `spbim-prospeccao`.
-   - Framework preset: **None**
-   - Build command: *(deixe vazio)*
-   - Build output directory: `public`
-   - Clique em **Save and Deploy**.
-4. No projeto criado: **Settings → Bindings → Add → D1 database**
-   - Variable name: `DB` → Database: `spbim-leads` → Save.
-5. **Settings → Variables and Secrets → Add** → tipo **Secret**
-   - Nome: `ADMIN_PASSWORD` → valor: senha forte do painel → Save.
-6. **Deployments → (último deploy) → ⋯ → Retry deployment** para aplicar os passos 4 e 5.
-7. Pronto: `https://spbim-prospeccao.pages.dev` (painel em `/admin.html`).
+1. **Armazenamento e bancos de dados → D1 → Criar banco de dados** → nome `spbim-leads`.
+   Copie o **ID do banco** e cole em `wrangler.jsonc` no campo `database_id`.
+2. **Trabalhadores e Páginas → Criar → Importar repositório** → `spbim-prospeccao`
+   (nome do projeto: `spbim-prospeccao`; comando de implantação: `npx wrangler deploy`).
+3. No projeto: **Configurações → Variáveis e segredos → Adicionar → Segredo**
+   → nome `ADMIN_PASSWORD`, valor: senha forte do painel.
+4. Pronto: `https://spbim-prospeccao.<sua-conta>.workers.dev` (painel em `/admin`).
    A tabela do banco é criada automaticamente no primeiro acesso.
 
 ### Domínio próprio (opcional)
-**Custom domains → Set up a custom domain** → ex.: `bim.spbim.com.br` e crie o CNAME indicado no DNS.
+**Configurações → Domínios e rotas → Adicionar → Domínio personalizado** → ex.: `bim.spbim.com.br` e crie o CNAME indicado no DNS.
 
 Cada `git push` na branch `main` publica o site automaticamente.
 
@@ -38,10 +33,10 @@ npm install
 echo "ADMIN_PASSWORD=senha-local-123" > .dev.vars
 npm run dev
 ```
-Site: http://localhost:8788 · Painel: http://localhost:8788/admin.html
+Site: http://localhost:8788 · Painel: http://localhost:8788/admin
 
 ### Limites do plano gratuito (folgados para captação de leads)
-- Pages: requisições ilimitadas ao site; 100 mil chamadas/dia à API
+- Workers: arquivos do site ilimitados; 100 mil chamadas/dia à API
 - D1: 5 GB de armazenamento, 5 milhões de leituras/dia
 
 ## Funcionalidades
@@ -56,7 +51,7 @@ Site: http://localhost:8788 · Painel: http://localhost:8788/admin.html
 ## Personalizar
 - Textos, marca e WhatsApp: `public/index.html`
 - Cores: variáveis no topo de `public/styles.css`
-- Segmentos AEC, maturidade BIM e pontuação: `functions/api/[[route]].js`
+- Segmentos AEC, maturidade BIM e pontuação: `src/api.js`
 
 ## Checklist antes de divulgar
 - [ ] Números reais na seção "Resultados" (estão como `XX`)

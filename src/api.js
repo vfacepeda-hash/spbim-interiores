@@ -1,4 +1,4 @@
-// SPBIM — API do site de prospecção (Cloudflare Pages Functions + banco D1)
+// SPBIM — API do site de prospecção (Cloudflare Workers + banco D1)
 // Rotas:
 //   GET    /api/opcoes            (público)  segmentos AEC, maturidade BIM e softwares
 //   POST   /api/leads             (público)  captura de lead pelo formulário
@@ -9,7 +9,7 @@
 //   DELETE /api/leads/:id         (admin)    exclui (pedido LGPD)
 //   GET    /api/leads.csv         (admin)    exporta CSV
 //
-// Bindings necessários no Cloudflare: D1 com o nome "DB" e variável secreta ADMIN_PASSWORD.
+// Bindings: D1 "DB" (wrangler.jsonc) e segredo ADMIN_PASSWORD (painel da Cloudflare).
 
 const STAGES = ['novo', 'contatado', 'qualificado', 'proposta', 'ganho', 'perdido'];
 
@@ -202,7 +202,7 @@ async function exportarCsv(env) {
 }
 
 // ---------- Roteador ----------
-export async function onRequest({ request, env }) {
+export async function handleApi(request, env) {
   const url = new URL(request.url);
   const path = url.pathname.replace(/\/+$/, '');
   const m = request.method;

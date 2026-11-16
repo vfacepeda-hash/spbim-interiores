@@ -1,0 +1,20 @@
+{
+  // Configuração do Worker na Cloudflare (o nome precisa ser igual ao do projeto no painel)
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "spbim-prospeccao",
+  "main": "src/worker.js",
+  "compatibility_date": "2025-09-01",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "observability": { "enabled": true },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "spbim-leads",
+      "database_id": "COLE_AQUI_O_ID_DO_BANCO_D1"
+    }
+  ]
+}
