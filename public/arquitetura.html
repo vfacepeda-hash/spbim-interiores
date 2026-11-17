@@ -543,7 +543,7 @@
       $('quiz').hidden = true; $('carregando').hidden = false;
       try {
         const [r] = await Promise.all([
-          fetch(API + '/api/raio-x', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ respostas, origem }) }),
+          fetch(API + '/api/raio-x', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ferramenta: 'arquitetura', respostas, origem }) }),
           new Promise((ok) => setTimeout(ok, 900)),
         ]);
         const j = await r.json().catch(() => ({}));

@@ -1,10 +1,13 @@
-# SPBIM — Landing pages de prospecção (arquitetura e interiores)
+# SPBIM — Landing pages de prospecção (arquitetura, construtoras e interiores)
 
 - **`/arquitetura`** (página principal): landing page para escritórios de arquitetura com o **Raio-X BIM**,
   uma ferramenta de 10 perguntas que mostra ao visitante a nota de maturidade BIM (0–100), o nível, os pontos
   que travam a produção e o caminho indicado. A SPBIM recebe, junto com o contato, a temperatura do lead, o
-  produto indicado e as frentes em que o escritório precisa de ajuda. Regras em `src/raiox.js`.
+  produto indicado e as frentes em que o escritório precisa de ajuda. Regras dos dois Raio-X em `src/raiox.js`.
   A raiz `/` e os endereços antigos redirecionam para ela.
+- **`/construtoras`**: a mesma ideia para construtoras, com um Raio-X próprio (obras simultâneas, tipo de obra,
+  projetos recebidos, compatibilização, quantitativos, planejamento, retrabalho e aditivos) e as frentes de BIM
+  da construtora: compatibilização, modelagem, 5D, 4D, as-built, implantação, treinamento e obras públicas.
 - **`/interiores`**: landing page de diagnóstico para escritórios de design de interiores (formulário em 2 etapas).
 - **API** (`src/api.js`): recebe o formulário, grava o lead no banco D1 e avisa a equipe no Telegram.
 
@@ -45,9 +48,9 @@ As respostas do Raio-X ficam na tabela `raiox`, de forma anônima. No console do
 -- Quantos fizeram o Raio-X e quantos viraram lead
 SELECT COUNT(*) AS raiox_feitos, SUM(lead_id IS NOT NULL) AS viraram_lead FROM raiox;
 
--- Distribuição por nível de maturidade
-SELECT json_extract(data, '$.resultado.nivel.nome') AS nivel, COUNT(*) AS escritorios
-FROM raiox GROUP BY nivel ORDER BY escritorios DESC;
+-- Distribuição por público e nível de maturidade
+SELECT json_extract(data, '$.ferramenta') AS publico, json_extract(data, '$.resultado.nivel.nome') AS nivel, COUNT(*) AS total
+FROM raiox GROUP BY publico, nivel ORDER BY publico, total DESC;
 
 -- Leads do Raio-X com temperatura, nota e indicação
 SELECT criado_em, json_extract(data, '$.nome') AS nome, json_extract(data, '$.empresa') AS escritorio,

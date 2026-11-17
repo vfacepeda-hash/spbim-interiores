@@ -1,6 +1,6 @@
 // SPBIM — API das landing pages (Cloudflare Workers + banco D1)
 //
-//   POST /api/raio-x  recebe as respostas do Raio-X BIM (arquitetura), calcula o resultado
+//   POST /api/raio-x  recebe as respostas do Raio-X BIM (arquitetura ou construtoras), calcula o resultado
 //                     e guarda as respostas de forma anônima (sem nome, e-mail ou telefone)
 //   POST /api/leads   recebe o formulário de contato, grava o lead (com o Raio-X, se houver) e avisa no Telegram
 //
@@ -8,7 +8,7 @@
 //   D1 "DB" (wrangler.jsonc)                       onde os leads ficam guardados
 //   Segredos TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID  aviso de lead novo no grupo da equipe
 
-import { validarRespostas, calcularRaioX, resumoRespostas, PERGUNTAS } from './raiox.js';
+import { getFerramenta, validarRespostas, calcularRaioX, resumoRespostas, opcao } from './raiox.js';
 
 const SEGMENTOS = {
   arquitetura: 'Escritório de arquitetura',
@@ -100,8 +100,8 @@ export function textoAviso(lead, retorno) {
     d ? `📊 Maturidade BIM: ${d.pontuacao}/100 · ${d.nivel}` : '',
     d ? `🎯 Indicação: ${d.produto}` : '',
     d ? `🧩 Precisa de: ${d.frentes.join('; ')}` : '',
-    d ? `👥 ${d.equipe} · 🛠️ ${d.software} · ⏱️ ${d.prazo}` : '',
-    d ? `🏁 Objetivo: ${d.objetivo}` : '',
+    d ? `📌 ${(d.destaques || []).join(' · ')}` : '',
+    d && d.objetivo ? `🏁 Objetivo: ${d.objetivo}` : '',
     !d && lead.mensagem ? `📋 ${lead.mensagem.slice(0, 500)}` : '',
     d ? '' : `📐 BIM: ${MATURIDADE_BIM[lead.maturidadeBim] || '—'}`,
     `📧 ${lead.email}`,
@@ -148,20 +148,23 @@ async function capturarLead(request, env, ctx) {
   let raioxId = clean(b.raioxId, 40);
   if (raioxId) {
     const rx = await env.DB.prepare('SELECT data FROM raiox WHERE id = ?').bind(raioxId).first();
-    if (!rx) raioxId = '';
+    const dados = rx ? JSON.parse(rx.data) : null;
+    const f = dados && getFerramenta(dados.ferramenta || 'arquitetura');
+    if (!f) raioxId = '';
     else {
-      const { respostas, resultado } = JSON.parse(rx.data);
-      const op = (id) => PERGUNTAS[id].opcoes[respostas[id]];
-      lead.segmento = lead.segmento || 'arquitetura';
+      const { respostas, resultado } = dados;
+      lead.segmento = f.segmento;
       lead.maturidadeBim = resultado.maturidadeBim;
       lead.softwares = cleanList([resultado.software]);
       lead.prazo = resultado.prazo;
       lead.interesse = resultado.produto.nome;
       lead.diagnostico = {
+        ferramenta: dados.ferramenta || 'arquitetura',
         pontuacao: resultado.pontuacao, nivel: resultado.nivel.nome, produto: resultado.produto.nome,
-        frentes: resultado.frentes.map((f) => f.nome), scoreLead: resultado.interno.scoreLead, temperatura: resultado.interno.temperatura,
-        papel: op('papel'), equipe: op('equipe'), software: op('software'), prazo: op('prazo'), objetivo: op('objetivo'),
-        respostas: resumoRespostas(respostas), raioxId,
+        frentes: resultado.frentes.map((x) => x.nome), scoreLead: resultado.interno.scoreLead, temperatura: resultado.interno.temperatura,
+        papel: opcao(f, respostas, 'papel'), objetivo: opcao(f, respostas, 'objetivo'),
+        destaques: f.destaques.map((id) => opcao(f, respostas, id)),
+        respostas: resumoRespostas(f, respostas), raioxId,
       };
       lead.mensagem = lead.mensagem || `Raio-X BIM: ${resultado.pontuacao}/100 (${resultado.nivel.nome}) · precisa de: ${lead.diagnostico.frentes.join('; ')}`;
     }
@@ -202,12 +205,15 @@ async function receberRaioX(request, env) {
   if (await rateLimited(env.DB, request.headers.get('CF-Connecting-IP') || 'local')) {
     return json({ error: 'Muitas tentativas. Tente novamente em instantes.' }, 429);
   }
-  const respostas = validarRespostas(b.respostas);
+  const ferramenta = clean(b.ferramenta, 30) || 'arquitetura';
+  const f = getFerramenta(ferramenta);
+  if (!f) return json({ error: 'Ferramenta inválida.' }, 400);
+  const respostas = validarRespostas(f, b.respostas);
   if (!respostas) return json({ error: 'Responda todas as perguntas para ver o resultado.' }, 400);
-  const resultado = calcularRaioX(respostas);
+  const resultado = calcularRaioX(f, respostas);
   const id = crypto.randomUUID();
   await env.DB.prepare('INSERT INTO raiox (id, criado_em, origem, data) VALUES (?, ?, ?, ?)')
-    .bind(id, now(), clean(b.origem, 120) || 'site', JSON.stringify({ respostas, resultado })).run();
+    .bind(id, now(), clean(b.origem, 120) || 'site', JSON.stringify({ ferramenta, respostas, resultado })).run();
   // O visitante vê maturidade, nível, recomendações e produto; a temperatura do lead fica só com a SPBIM
   const { pontuacao, nivel, insights, produto, frentes } = resultado;
   return json({ id, pontuacao, nivel, insights, produto, frentes });
