@@ -1,10 +1,14 @@
-// SPBIM — API da landing page de interiores (Cloudflare Workers + banco D1)
+// SPBIM — API das landing pages (Cloudflare Workers + banco D1)
 //
-//   POST /api/leads   recebe o formulário da landing page, grava no banco e avisa no Telegram
+//   POST /api/raio-x  recebe as respostas do Raio-X BIM (arquitetura), calcula o resultado
+//                     e guarda as respostas de forma anônima (sem nome, e-mail ou telefone)
+//   POST /api/leads   recebe o formulário de contato, grava o lead (com o Raio-X, se houver) e avisa no Telegram
 //
 // Configuração na Cloudflare:
 //   D1 "DB" (wrangler.jsonc)                       onde os leads ficam guardados
 //   Segredos TELEGRAM_BOT_TOKEN e TELEGRAM_CHAT_ID  aviso de lead novo no grupo da equipe
+
+import { validarRespostas, calcularRaioX, resumoRespostas, PERGUNTAS } from './raiox.js';
 
 const SEGMENTOS = {
   arquitetura: 'Escritório de arquitetura',
@@ -48,6 +52,9 @@ async function ensureSchema(db) {
       id TEXT PRIMARY KEY, email TEXT, criado_em TEXT NOT NULL, data TEXT NOT NULL)`),
     db.prepare('CREATE INDEX IF NOT EXISTS idx_leads_email ON leads(email)'),
     db.prepare('CREATE TABLE IF NOT EXISTS envios (ip TEXT NOT NULL, em INTEGER NOT NULL)'),
+    // Raio-X anônimo: respostas e resultado, ligado ao lead só se a pessoa deixar o contato depois
+    db.prepare(`CREATE TABLE IF NOT EXISTS raiox (
+      id TEXT PRIMARY KEY, criado_em TEXT NOT NULL, origem TEXT, lead_id TEXT, data TEXT NOT NULL)`),
   ]);
   schemaReady = true;
 }
@@ -79,16 +86,24 @@ async function notificar(env, texto) {
     console.error('Falha ao avisar no Telegram', err);
   }
 }
-function textoAviso(lead, retorno) {
+export function textoAviso(lead, retorno) {
   const fone = (lead.telefone || '').replace(/\D/g, '');
   const whats = fone ? `https://wa.me/${fone.length <= 11 ? '55' + fone : fone}` : '';
+  const d = lead.diagnostico;
+  const termo = { quente: '🔥 QUENTE', morno: '🌤️ MORNO', frio: '❄️ FRIO' };
   const linhas = [
-    retorno ? '🔁 Cliente voltou a pedir o diagnóstico — SPBIM' : '🔔 Novo pedido de diagnóstico — SPBIM',
+    retorno ? '🔁 Cliente voltou a entrar em contato — SPBIM' : d ? '🔔 Novo lead do Raio-X BIM — SPBIM' : '🔔 Novo pedido de diagnóstico — SPBIM',
     '',
-    `👤 ${lead.nome}`,
+    d ? `${termo[d.temperatura] || ''} · score do lead ${d.scoreLead}/100` : '',
+    `👤 ${lead.nome}${d ? ' — ' + d.papel : ''}`,
     `🏢 ${lead.empresa || '—'}${lead.segmento ? ' (' + SEGMENTOS[lead.segmento] + ')' : ''}`,
-    lead.mensagem ? `📋 ${lead.mensagem.slice(0, 500)}` : '',
-    `📐 BIM: ${MATURIDADE_BIM[lead.maturidadeBim] || '—'}`,
+    d ? `📊 Maturidade BIM: ${d.pontuacao}/100 · ${d.nivel}` : '',
+    d ? `🎯 Indicação: ${d.produto}` : '',
+    d ? `🧩 Precisa de: ${d.frentes.join('; ')}` : '',
+    d ? `👥 ${d.equipe} · 🛠️ ${d.software} · ⏱️ ${d.prazo}` : '',
+    d ? `🏁 Objetivo: ${d.objetivo}` : '',
+    !d && lead.mensagem ? `📋 ${lead.mensagem.slice(0, 500)}` : '',
+    d ? '' : `📐 BIM: ${MATURIDADE_BIM[lead.maturidadeBim] || '—'}`,
     `📧 ${lead.email}`,
     lead.telefone ? `📱 ${lead.telefone}` : '',
     `📍 Origem: ${lead.origem}`,
@@ -128,6 +143,30 @@ async function capturarLead(request, env, ctx) {
   }
 
   const lead = buildLead(b);
+
+  // Veio do Raio-X: o diagnóstico (calculado e guardado pelo servidor) completa o cadastro
+  let raioxId = clean(b.raioxId, 40);
+  if (raioxId) {
+    const rx = await env.DB.prepare('SELECT data FROM raiox WHERE id = ?').bind(raioxId).first();
+    if (!rx) raioxId = '';
+    else {
+      const { respostas, resultado } = JSON.parse(rx.data);
+      const op = (id) => PERGUNTAS[id].opcoes[respostas[id]];
+      lead.segmento = lead.segmento || 'arquitetura';
+      lead.maturidadeBim = resultado.maturidadeBim;
+      lead.softwares = cleanList([resultado.software]);
+      lead.prazo = resultado.prazo;
+      lead.interesse = resultado.produto.nome;
+      lead.diagnostico = {
+        pontuacao: resultado.pontuacao, nivel: resultado.nivel.nome, produto: resultado.produto.nome,
+        frentes: resultado.frentes.map((f) => f.nome), scoreLead: resultado.interno.scoreLead, temperatura: resultado.interno.temperatura,
+        papel: op('papel'), equipe: op('equipe'), software: op('software'), prazo: op('prazo'), objetivo: op('objetivo'),
+        respostas: resumoRespostas(respostas), raioxId,
+      };
+      lead.mensagem = lead.mensagem || `Raio-X BIM: ${resultado.pontuacao}/100 (${resultado.nivel.nome}) · precisa de: ${lead.diagnostico.frentes.join('; ')}`;
+    }
+  }
+
   if (!lead.nome || !emailValido(lead.email)) return json({ error: 'Informe nome e um e-mail válido.' }, 400);
   if (!lead.consentimento) return json({ error: 'É necessário aceitar o aviso de privacidade (LGPD).' }, 400);
   if (!lead.empresa) return json({ error: 'Informe o nome do escritório.' }, 400);
@@ -140,19 +179,38 @@ async function capturarLead(request, env, ctx) {
     const existente = JSON.parse(row.data);
     existente.historico = existente.historico || existente.notas || [];
     existente.historico.push({ data: now(), texto: `Novo pedido pelo site · ${lead.mensagem}`, origem: lead.origem });
-    for (const f of ['telefone', 'empresa', 'segmento', 'maturidadeBim', 'interesse', 'prazo']) {
+    for (const f of ['telefone', 'empresa', 'segmento', 'maturidadeBim', 'interesse', 'prazo', 'diagnostico']) {
       if (lead[f]) existente[f] = lead[f];
     }
     existente.atualizadoEm = now();
     await env.DB.prepare('UPDATE leads SET data = ? WHERE id = ?').bind(JSON.stringify(existente), existente.id).run();
+    if (raioxId) await env.DB.prepare('UPDATE raiox SET lead_id = ? WHERE id = ?').bind(existente.id, raioxId).run();
     ctx?.waitUntil(notificar(env, textoAviso({ ...existente, mensagem: lead.mensagem, origem: lead.origem }, true)));
     return json({ ok: true });
   }
 
   await env.DB.prepare('INSERT INTO leads (id, email, criado_em, data) VALUES (?, ?, ?, ?)')
     .bind(lead.id, lead.email, lead.criadoEm, JSON.stringify(lead)).run();
+  if (raioxId) await env.DB.prepare('UPDATE raiox SET lead_id = ? WHERE id = ?').bind(lead.id, raioxId).run();
   ctx?.waitUntil(notificar(env, textoAviso(lead, false)));
   return json({ ok: true }, 201);
+}
+
+// ---------- Raio-X BIM ----------
+async function receberRaioX(request, env) {
+  const b = await request.json().catch(() => ({}));
+  if (await rateLimited(env.DB, request.headers.get('CF-Connecting-IP') || 'local')) {
+    return json({ error: 'Muitas tentativas. Tente novamente em instantes.' }, 429);
+  }
+  const respostas = validarRespostas(b.respostas);
+  if (!respostas) return json({ error: 'Responda todas as perguntas para ver o resultado.' }, 400);
+  const resultado = calcularRaioX(respostas);
+  const id = crypto.randomUUID();
+  await env.DB.prepare('INSERT INTO raiox (id, criado_em, origem, data) VALUES (?, ?, ?, ?)')
+    .bind(id, now(), clean(b.origem, 120) || 'site', JSON.stringify({ respostas, resultado })).run();
+  // O visitante vê maturidade, nível, recomendações e produto; a temperatura do lead fica só com a SPBIM
+  const { pontuacao, nivel, insights, produto, frentes } = resultado;
+  return json({ id, pontuacao, nivel, insights, produto, frentes });
 }
 
 // ---------- Roteador ----------
@@ -162,6 +220,7 @@ export async function handleApi(request, env, ctx) {
   if (!env.DB) return json({ error: 'Banco D1 não configurado (binding "DB").' }, 500);
   try {
     await ensureSchema(env.DB);
+    if (path === '/api/raio-x' && request.method === 'POST') return receberRaioX(request, env);
     if (path === '/api/leads' && request.method === 'POST') return capturarLead(request, env, ctx);
     return json({ error: 'Rota não encontrada' }, 404);
   } catch (err) {

@@ -1,7 +1,11 @@
-# SPBIM — Landing page de diagnóstico para escritórios de interiores
+# SPBIM — Landing pages de prospecção (arquitetura e interiores)
 
-- **`/interiores`**: landing page com formulário em 2 etapas e aviso de privacidade (LGPD) na própria página.
-  A raiz `/` e os endereços antigos (`/admin`, `/servicos/...`, `/politica-privacidade`) redirecionam para ela.
+- **`/arquitetura`** (página principal): landing page para escritórios de arquitetura com o **Raio-X BIM**,
+  uma ferramenta de 10 perguntas que mostra ao visitante a nota de maturidade BIM (0–100), o nível, os pontos
+  que travam a produção e o caminho indicado. A SPBIM recebe, junto com o contato, a temperatura do lead, o
+  produto indicado e as frentes em que o escritório precisa de ajuda. Regras em `src/raiox.js`.
+  A raiz `/` e os endereços antigos redirecionam para ela.
+- **`/interiores`**: landing page de diagnóstico para escritórios de design de interiores (formulário em 2 etapas).
 - **API** (`src/api.js`): recebe o formulário, grava o lead no banco D1 e avisa a equipe no Telegram.
 
 Hospedagem gratuita na Cloudflare (Workers + D1): uso comercial permitido, HTTPS automático e site sempre ativo.
@@ -33,6 +37,26 @@ ORDER BY criado_em DESC;
 ```
 
 Para excluir um lead a pedido do titular (LGPD): `DELETE FROM leads WHERE email = 'email@do.lead';`
+
+## Resultados do Raio-X (inclusive de quem não deixou contato)
+As respostas do Raio-X ficam na tabela `raiox`, de forma anônima. No console do D1:
+
+```sql
+-- Quantos fizeram o Raio-X e quantos viraram lead
+SELECT COUNT(*) AS raiox_feitos, SUM(lead_id IS NOT NULL) AS viraram_lead FROM raiox;
+
+-- Distribuição por nível de maturidade
+SELECT json_extract(data, '$.resultado.nivel.nome') AS nivel, COUNT(*) AS escritorios
+FROM raiox GROUP BY nivel ORDER BY escritorios DESC;
+
+-- Leads do Raio-X com temperatura, nota e indicação
+SELECT criado_em, json_extract(data, '$.nome') AS nome, json_extract(data, '$.empresa') AS escritorio,
+       json_extract(data, '$.telefone') AS whatsapp,
+       json_extract(data, '$.diagnostico.temperatura') AS temperatura,
+       json_extract(data, '$.diagnostico.pontuacao') AS nota_bim,
+       json_extract(data, '$.diagnostico.produto') AS indicacao
+FROM leads WHERE json_extract(data, '$.diagnostico') IS NOT NULL ORDER BY criado_em DESC;
+```
 
 ## Publicar do zero (se precisar recriar)
 1. **Armazenamento e bancos de dados → D1 → Criar banco de dados** → `spbim-leads`; cole o ID em `wrangler.jsonc` (`database_id`).
