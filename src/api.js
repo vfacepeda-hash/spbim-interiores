@@ -24,8 +24,16 @@ const MATURIDADE_BIM = {
 const SOFTWARES = ['Revit', 'ArchiCAD', 'Navisworks', 'Tekla', 'Civil 3D', 'AutoCAD', 'SketchUp', 'Outro'];
 
 // ---------- Utilidades ----------
+// CORS: permite que a landing page funcione também hospedada fora da Cloudflare
+// (ex.: arquivo baixado e publicado em outro servidor), enviando o formulário para esta API.
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Max-Age': '86400',
+};
 const json = (data, status = 200) =>
-  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } });
+  new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json; charset=utf-8', ...CORS } });
 const clean = (v, max = 200) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 const cleanList = (v) => (Array.isArray(v) ? v : v ? [v] : []).filter((x) => SOFTWARES.includes(x));
 const now = () => new Date().toISOString();
@@ -150,6 +158,7 @@ async function capturarLead(request, env, ctx) {
 // ---------- Roteador ----------
 export async function handleApi(request, env, ctx) {
   const path = new URL(request.url).pathname.replace(/\/+$/, '');
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
   if (!env.DB) return json({ error: 'Banco D1 não configurado (binding "DB").' }, 500);
   try {
     await ensureSchema(env.DB);
